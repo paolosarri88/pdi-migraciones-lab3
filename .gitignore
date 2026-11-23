@@ -1,0 +1,11 @@
+.DS_Store
+.env
+.venv/
+__pycache__/
+data/
+*.sqlite*
+.terraform/
+*.tfstate*
+*.tfvars
+!*.tfvars.example
+test-results/
