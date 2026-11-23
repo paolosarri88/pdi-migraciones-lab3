@@ -32,3 +32,5 @@ Publicada el 23 de noviembre de 2026 en la revisión `pdi-portal-00003-w82`, ima
 - Migraciones aditivas: añaden campos de revisión, requisito, versiones y recordatorios. No borran ni reinician los datos existentes.
 
 ClaveÚnica e integraciones institucionales continúan simuladas. No se deben ingresar contraseñas ni documentos reales. El eslogan anterior era texto del prototipo y se reemplazó por «Portal de atención migratoria».
+
+Ajuste final de contadores publicado en `pdi-portal-00004-sqt` (`portal:20261123194359`). Comprobación en el panel funcionario: el contador de antecedentes pendientes muestra 17 y su filtro muestra exactamente 17 solicitudes. Código sincronizado en main y Paolo.
