@@ -20,3 +20,15 @@ Imagen desplegada: `us-central1-docker.pkg.dev/pdi-lab3-paolo-20261123/pdi-image
 - Terraform creó un presupuesto de avisos por US$40 de consumo bruto mensual, con umbrales de 25%, 50%, 75% y 100%. Es un aviso, no un tope automático de gasto.
 
 La integración real con Microsoft Foundry sigue pendiente de una suscripción y despliegue Azure disponibles. El portal no presenta una respuesta ficticia como si proviniera de un modelo real. Las integraciones institucionales y la identidad ciudadana permanecen simuladas.
+
+## Actualización de flujos documentales e interfaz
+
+Publicada el 23 de noviembre de 2026 en la revisión `pdi-portal-00003-w82`, imagen `portal:20261123193525` del mismo repositorio de Artifact Registry. La imagen indicada al inicio corresponde al despliegue original.
+
+- Diez pruebas de integración aprobadas con SQLite y diez con PostgreSQL real en base temporal aislada. Incluyen permisos, revisión por documento, rechazo y reemplazo, conservación de versiones, resolución favorable condicionada a documentos aceptados, avisos completados y calendario con alarmas.
+- Comprobación en navegador: ingreso con RUN de prueba, ojo para mostrar/ocultar clave, búsqueda inmediata, aviso de duplicado antes del formulario, validación en español, rechazo de archivos mayores a 5 MB y carga separada de dos antecedentes hasta enviar la solicitud.
+- Comprobación de cita: al confirmar desaparece el aviso de confirmación; se pueden guardar varios plazos de recordatorio. El archivo de calendario contiene alarmas y no sustituye un servicio de SMS.
+- La versión pública permite ingreso ciudadano con RUN ficticio y conserva los registros anteriores. Se verificó el formulario de nueva solicitud en Google Cloud después de la corrección final.
+- Migraciones aditivas: añaden campos de revisión, requisito, versiones y recordatorios. No borran ni reinician los datos existentes.
+
+ClaveÚnica e integraciones institucionales continúan simuladas. No se deben ingresar contraseñas ni documentos reales. El eslogan anterior era texto del prototipo y se reemplazó por «Portal de atención migratoria».

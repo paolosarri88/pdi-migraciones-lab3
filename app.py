@@ -26,15 +26,15 @@ if not keyfile.exists():
 app = Flask(__name__, static_folder='static')
 app.config.update(SECRET_KEY=os.environ.get('SECRET_KEY', keyfile.read_text()), MAX_CONTENT_LENGTH=9*1024*1024,
                   SESSION_COOKIE_SECURE=os.environ.get('CLOUD_DEPLOYMENT')=='1', SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax', PERMANENT_SESSION_LIFETIME=timedelta(hours=8))
-STATUSES = ['Recibida', 'En revisión', 'Requiere antecedentes', 'Cita programada', 'Resuelta', 'Cerrada']
+STATUSES = ['Recibida', 'En revisión', 'Requiere antecedentes', 'Cita programada', 'Resuelta', 'Cerrada', 'Rechazada']
 OFFICE = 'Migraciones y Policía Internacional · Santiago'
 SOURCE = 'https://www.pdichile.cl/tr%C3%A1mites-online'
 CATALOG = [
- {'id':'viajes','name':'Certificado de viajes','group':'Certificados','description':'Consulta y acreditación de movimientos de entrada y salida del país.','docs':['Documento de identidad de prueba','Antecedente del viaje, si corresponde'],'fields':['País o institución donde se presentará','Período de viajes a consultar'],'source':SOURCE},
- {'id':'vigencia-rm','name':'Vigencia de residencia definitiva · RM','group':'Certificados','description':'Demostración de revisión de antecedentes de residencia para la Región Metropolitana.','docs':['Documento de identidad de prueba','Antecedente de residencia de prueba'],'fields':['Comuna de residencia','Motivo de la solicitud'],'source':SOURCE},
- {'id':'vigencia-regiones','name':'Vigencia de residencia definitiva · Regiones','group':'Certificados','description':'Demostración de una solicitud de vigencia fuera de la Región Metropolitana.','docs':['Documento de identidad de prueba','Antecedente de residencia de prueba'],'fields':['Región de residencia','Comuna de residencia'],'source':SOURCE},
- {'id':'duplicado-visa','name':'Duplicado del registro de visa','group':'Duplicados','description':'Solicitud de demostración para obtener una copia de un registro previo.','docs':['Documento de identidad de prueba','Antecedente del registro, si se dispone'],'fields':['Año aproximado del registro','Motivo del duplicado'],'source':SOURCE},
- {'id':'tarjeta-turismo','name':'Duplicado de tarjeta de turismo','group':'Duplicados','description':'Simulación del ingreso de antecedentes para recuperar un registro de turismo.','docs':['Documento de viaje de prueba'],'fields':['Fecha aproximada de ingreso','Paso fronterizo'],'source':SOURCE},
+ {'id':'viajes','name':'Certificado de viajes','group':'Certificados','description':'Consulta y acreditación de movimientos de entrada y salida del país.','docs':['Documento de identidad de prueba','Antecedente del viaje, si corresponde'],'fields':['País o institución donde se presentará','Período de viajes a consultar'],'source':'https://www.pdichile.cl/tr%C3%A1mites-online'},
+ {'id':'vigencia-rm','name':'Vigencia de residencia definitiva · RM','group':'Certificados','description':'Demostración de revisión de antecedentes de residencia para la Región Metropolitana.','docs':['Documento de identidad de prueba','Antecedente de residencia de prueba'],'fields':['Comuna de residencia','Institución donde presentarás el certificado'],'source':'https://www.pdichile.cl/tr%C3%A1mites-online/vigencia-residencia-definitiva-rm'},
+ {'id':'vigencia-regiones','name':'Vigencia de residencia definitiva · Regiones','group':'Certificados','description':'Demostración de una solicitud de vigencia fuera de la Región Metropolitana.','docs':['Documento de identidad de prueba','Antecedente de residencia de prueba'],'fields':['Región de residencia','Comuna de residencia'],'source':'https://www.pdichile.cl/tr%C3%A1mites-online/Vigencia-Residencia-Definitiva-Regiones'},
+ {'id':'duplicado-visa','name':'Duplicado del registro de visa','group':'Duplicados','description':'Solicitud de demostración para obtener una copia de un registro previo.','docs':['Documento de identidad de prueba','Antecedente del registro, si se dispone'],'fields':['Año aproximado del registro','Motivo del duplicado'],'source':'https://www.pdichile.cl/instituci%C3%B3n/unidades/migraciones'},
+ {'id':'tarjeta-turismo','name':'Duplicado de tarjeta de turismo','group':'Duplicados','description':'Simulación del ingreso de antecedentes para recuperar un registro de turismo.','docs':['Documento de viaje de prueba'],'fields':['Fecha aproximada de ingreso','Paso fronterizo'],'source':'https://www.pdichile.cl/tr%C3%A1mites-online'},
  {'id':'perdida','name':'Constancia de pérdida de documento','group':'Constancias','description':'Demostración de una constancia relativa a un documento de identidad extranjero.','docs':['Identificación o antecedente alternativo de prueba'],'fields':['Tipo de documento extraviado','Circunstancias del extravío'],'source':'https://www.pdichile.cl/tr%C3%A1mites-online/constancia-de-p%C3%A9rdida-de-documento'},
  {'id':'domicilio','name':'Certificado de residencia y domicilio','group':'Certificados','description':'Demostración de revisión de domicilio y antecedentes asociados.','docs':['Documento de identidad de prueba','Antecedente de domicilio de prueba'],'fields':['Dirección declarada','Comuna'],'source':'https://www.pdichile.cl/instituci%C3%B3n/unidades/migraciones'},
  {'id':'registro-ingreso','name':'Revisión de registro de ingreso','group':'Atención migratoria','description':'Caso académico basado en la visita a PDI: antecedentes de ingreso no encontrados o incompletos.','docs':['Documento de viaje de prueba','Antecedente de ingreso de prueba'],'fields':['Fecha declarada de ingreso','Paso fronterizo declarado'],'source':None},
@@ -43,9 +43,9 @@ CATALOG = [
  {'id':'orientacion','name':'Orientación migratoria','group':'Atención migratoria','description':'Solicitud de orientación y derivación dentro de la demostración.','docs':[],'fields':['Tema de la consulta'],'source':None},
 ]
 EXTERNAL = [
- {'name':'Salvoconducto','description':'Revisa el procedimiento y las condiciones en el portal oficial.','url':SOURCE},
- {'name':'AutoSeguro','description':'Servicio institucional externo al alcance migratorio del prototipo.','url':SOURCE},
- {'name':'Denunciar un delito','description':'Consulta los canales oficiales. Esta aplicación no recibe denuncias reales.','url':'https://www.pdichile.cl/home/pdi'},
+ {'name':'Salvoconducto','description':'Revisa el procedimiento y las condiciones en el portal oficial.','url':'https://www.pdichile.cl/tr%C3%A1mites-online/salvoconducto'},
+ {'name':'AutoSeguro','description':'Servicio institucional externo al alcance migratorio del prototipo.','url':'https://www.autoseguro.gob.cl'},
+ {'name':'Denunciar un delito','description':'Consulta los canales oficiales. Esta aplicación no recibe denuncias reales.','url':'https://www.pdichile.cl/informaci%C3%B3n/denuncia-seguro'},
  {'name':'Permisos de residencia y nacionalización','description':'Orientación hacia el Servicio Nacional de Migraciones; no se tramitan aquí.','url':'https://serviciomigraciones.cl/'},
 ]
 
@@ -178,8 +178,9 @@ def login():
     data=request.get_json(silent=True) or {};email=str(data.get('email','')).strip().lower();ip=request.remote_addr
     attempts[ip]=[t for t in attempts.get(ip,[]) if time.time()-t<60]
     if len(attempts[ip])>=12:return fail('Demasiados intentos. Espera un minuto.',429)
-    u=one('SELECT * FROM users WHERE email=? AND active=1',(email,))
-    if not u or not check_password_hash(u['password'],str(data.get('password',''))):attempts[ip].append(time.time());return fail('Correo o contraseña incorrectos.',401)
+    identifier=''.join(ch for ch in email.upper() if ch.isalnum())
+    u=one('SELECT * FROM users WHERE (email=? OR demo_run=?) AND active=1',(email,identifier))
+    if not u or not check_password_hash(u['password'],str(data.get('password',''))):attempts[ip].append(time.time());return fail('RUN/correo o clave de demostración incorrectos.',401)
     session.clear();session['uid']=u['id'];session['csrf']=secrets.token_urlsafe(32);session.permanent=True
     return jsonify(user=actor(),csrf=session['csrf'])
 
@@ -192,7 +193,11 @@ def requests_list():
     sql='SELECT r.*,u.name as owner_name FROM requests r JOIN users u ON u.id=r.user_id'
     vals=[]
     if g.user['role']=='citizen':sql+=' WHERE r.user_id=?';vals.append(g.user['id'])
-    return jsonify(items=rows(sql+' ORDER BY r.created DESC, r.id DESC',vals))
+    items=rows(sql+' ORDER BY r.created DESC, r.id DESC',vals)
+    for item in items:
+        item.update(document_overview(item))
+        if g.user['role']=='citizen':item['ai']=None
+    return jsonify(items=items)
 
 @app.post('/api/requests')
 @auth()
@@ -200,7 +205,7 @@ def create_request():
     d=request.get_json(silent=True) or {};typ=d.get('type_id');desc=str(d.get('description','')).strip()
     if typ not in {t['id'] for t in CATALOG} or len(desc)<15 or len(desc)>5000:return fail('Selecciona un trámite y describe tu solicitud (15 a 5.000 caracteres).')
     if g.user['role']!='citizen':return fail('Las solicitudes ciudadanas se ingresan con una cuenta de ciudadano.',403)
-    duplicate=one("SELECT id,folio FROM requests WHERE user_id=? AND type_id=? AND status NOT IN ('Resuelta','Cerrada')",(g.user['id'],typ))
+    duplicate=one("SELECT id,folio FROM requests WHERE user_id=? AND type_id=? AND status NOT IN ('Resuelta','Cerrada','Rechazada')",(g.user['id'],typ))
     if duplicate:return fail(f"Ya tienes una solicitud activa de este tipo: {duplicate['folio']}. Revisa su detalle antes de ingresar otra.",409)
     cur=db().execute('INSERT INTO requests(user_id,type_id,status,description,details,created,updated) VALUES(?,?,?,?,?,?,?)',(g.user['id'],typ,'Recibida',desc,dumps(d.get('details',{})),now(),now()));rid=cur.lastrowid
     folio=f'SOL-{datetime.now().year}-{rid:04}';db().execute('UPDATE requests SET folio=? WHERE id=?',(folio,rid));event(rid,'Recibida','Solicitud recibida. Puedes seguir su estado desde este portal.')
@@ -214,9 +219,10 @@ def detail(rid):
     if not r:return fail('Solicitud no encontrada.',404)
     r['details']=json.loads(r['details'] or '{}');r['ai']=json.loads(r['ai']) if r['ai'] else None
     events=rows('SELECT * FROM events WHERE request_id=?'+(" AND visibility='public'" if g.user['role']=='citizen' else '')+' ORDER BY id DESC',(rid,))
-    docs=rows('SELECT id,name,mime,size,created FROM documents WHERE request_id=? ORDER BY id DESC',(rid,))
+    docs=rows('SELECT * FROM documents WHERE request_id=? ORDER BY id DESC',(rid,))
     if g.user['role']=='citizen':r['ai']=None
-    return jsonify(request=r,events=events,documents=docs,appointments=rows('SELECT * FROM appointments WHERE request_id=? ORDER BY date DESC',(rid,)))
+    r.update(document_overview(r,docs))
+    return jsonify(request=r,events=events,documents=docs,requirements=document_groups(r,docs),appointments=rows('SELECT * FROM appointments WHERE request_id=? ORDER BY date DESC',(rid,)))
 
 @app.patch('/api/requests/<int:rid>')
 @auth(staff=True)
@@ -228,6 +234,7 @@ def update_request(rid):
     if not note:return fail('Escribe una observación para dejar trazabilidad.')
     if len(note)>3000:return fail('La observación es demasiado extensa.')
     if r['status']=='Cerrada' and g.user['role']!='admin':return fail('Solo administración puede reabrir un expediente cerrado.',403)
+    if status=='Resuelta' and any(x['status']!='Aceptado' for x in document_groups(r)):return fail('Acepta todos los antecedentes requeridos antes de resolver favorablemente.',409)
     assigned=d.get('assigned_to',r['assigned_to'])
     if assigned and not one("SELECT id FROM users WHERE id=? AND role IN ('staff','admin') AND active=1",(assigned,)):return fail('Funcionario no válido.')
     db().execute('UPDATE requests SET status=?,updated=?,assigned_to=? WHERE id=?',(status,now(),assigned,rid));event(rid,status,note)
@@ -239,7 +246,7 @@ def update_request(rid):
 def upload(rid):
     r=request_record(rid)
     if not r:return fail('Solicitud no encontrada.',404)
-    if r['status'] in ('Resuelta','Cerrada'):return fail('Este expediente no admite nuevos antecedentes.',409)
+    if r['status'] in ('Resuelta','Cerrada','Rechazada'):return fail('Este expediente no admite nuevos antecedentes.',409)
     d=request.get_json(silent=True) or {};name=Path(str(d.get('name','documento'))).name[:160]
     try:raw=base64.b64decode(d.get('content',''),validate=True)
     except Exception:return fail('No se pudo leer el archivo.')
@@ -249,8 +256,16 @@ def upload(rid):
     elif raw.startswith(b'\xff\xd8\xff'):mime='image/jpeg';ext='.jpg'
     else:return fail('Solo se admiten PDF, PNG o JPG válidos.')
     if len(rows('SELECT id FROM documents WHERE request_id=?',(rid,)))>=12:return fail('El expediente admite hasta 12 documentos.')
+    requirement=str(d.get('requirement','')).strip()
+    groups=document_groups(r)
+    allowed=[x['name'] for x in groups]
+    if not requirement:requirement=next((x['name'] for x in groups if x['status']=='Falta documento'),next((x['name'] for x in groups if x['status']=='Rechazado'),'Otros antecedentes'))
+    if requirement not in allowed and requirement!='Otros antecedentes':return fail('Tipo de antecedente no válido.')
+    current=one('SELECT * FROM documents WHERE request_id=? AND requirement=? AND superseded=0 ORDER BY id DESC',(rid,requirement))
+    if current and current['review_status']=='Aceptado' and g.user['role']=='citizen':return fail('Este antecedente ya está aceptado; no requiere reemplazo.',409)
     path=secrets.token_hex(20)+ext;put_document(DATA,path,raw,mime)
-    cur=db().execute('INSERT INTO documents(request_id,name,path,mime,size,created) VALUES(?,?,?,?,?,?)',(rid,name,path,mime,len(raw),now()))
+    db().execute('UPDATE documents SET superseded=1 WHERE request_id=? AND requirement=? AND superseded=0',(rid,requirement))
+    cur=db().execute('INSERT INTO documents(request_id,name,path,mime,size,created,requirement) VALUES(?,?,?,?,?,?,?)',(rid,name,path,mime,len(raw),now(),requirement))
     event(rid,r['status'],f'Antecedente incorporado: {name}.')
     db().execute('UPDATE requests SET updated=? WHERE id=?',(now(),rid))
     return jsonify(id=cur.lastrowid),201
@@ -263,6 +278,7 @@ def resubmit(rid):
     if g.user['role']!='citizen' or r['status']!='Requiere antecedentes':return fail('Esta solicitud no requiere un reenvío de antecedentes.',409)
     last=one("SELECT id FROM events WHERE request_id=? AND status='Requiere antecedentes' AND note NOT LIKE 'Antecedente incorporado:%' ORDER BY id DESC LIMIT 1",(rid,))
     if not one("SELECT id FROM events WHERE request_id=? AND id>? AND note LIKE 'Antecedente incorporado:%'",(rid,last['id'] if last else 0)):return fail('Adjunta al menos un documento nuevo antes de enviar.')
+    if document_overview(r)['document_tone']=='attention':return fail('Completa los documentos pendientes u observados antes de enviarlos a revisión.')
     db().execute("UPDATE requests SET status='En revisión',updated=? WHERE id=?",(now(),rid));event(rid,'En revisión','El ciudadano envió los antecedentes complementarios.');return jsonify(ok=True)
 
 @app.get('/api/documents/<int:did>')
@@ -339,7 +355,7 @@ def kiosk():
 
 @app.get('/api/notifications')
 @auth()
-def notifications():return jsonify(items=rows('SELECT * FROM notifications WHERE user_id=? ORDER BY id DESC',(g.user['id'],)))
+def notifications():return jsonify(items=active_notices(g.user['id']))
 
 @app.patch('/api/notifications/<int:nid>')
 @auth()
@@ -411,4 +427,6 @@ def frontend(path=''):
     return send_from_directory(ROOT/'static','index.html')
 
 init()
+from workflow import install, document_groups, document_overview, active_notices
+install(globals())
 if __name__=='__main__':app.run(host=os.environ.get('HOST','127.0.0.1'),port=int(os.environ.get('PORT','8080')),debug=False)

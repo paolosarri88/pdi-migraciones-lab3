@@ -59,7 +59,7 @@ El módulo de asistencia del funcionario admite Azure OpenAI mediante variables 
 
 Once tipos de solicitudes con campos propios y expedientes compartidos. Los requisitos del prototipo son simplificados; no reproducen requisitos legales ni emiten certificados oficiales. Se incluyen enlaces externos para procedimientos fuera de la demostración. Referencias: https://www.pdichile.cl/home/pdi y https://www.pdichile.cl/tr%C3%A1mites-online. Los casos de revisión de ingreso, entrega de antecedentes, entrevista y orientación son escenarios académicos basados en el problema del proyecto. Residencia y nacionalización se derivan a https://serviciomigraciones.cl/.
 
-Interfaz azul marino, blanco y gris, estados en texto, navegación lateral y superior, pie institucional de referencia y aviso académico. El texto PDI es una composición tipográfica de demostración, no un archivo de logotipo institucional oficial.
+Interfaz azul marino, blanco y gris, estados en texto, navegación lateral y superior, pie institucional de referencia y aviso académico. La marca PDI usa contornos vectoriales de referencia, sin depender de una fuente instalada. Referencia: [SVG en Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Policia_de_Investigaciones_de_Chile.svg), atribuido a PDI y publicado como PD-textlogo. Colores de referencia: #00234c y #ffd100. El portal mantiene su identificación como prototipo académico.
 
 ## Validación
 
@@ -73,3 +73,7 @@ Seis pruebas de integración, ejecutables contra SQLite o una base PostgreSQL ai
 ## Trabajo compartido
 
 `main` conserva la base compartida; `Paolo` y `Camilo` son ramas de trabajo. Integrar cambios revisados mediante pull requests. Los datos locales y secretos no se comparten con el repositorio.
+
+### Actualización de experiencia y documentos
+
+Ingreso con RUN ficticio `00.000.001-9` o correo de demostración (misma clave ciudadana). No se conecta con ClaveÚnica real. Búsqueda inmediata por trámite y folio, control temprano de duplicados, documentos separados por requisito, revisión individual con versiones e historial, avisos que dejan de pedir acciones completadas y validaciones en español. Las citas confirmadas permiten descargar un archivo `.ics` con varios recordatorios; el teléfono es una preferencia de prueba y no se envían SMS.
