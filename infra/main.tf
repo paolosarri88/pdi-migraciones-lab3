@@ -246,9 +246,32 @@ resource "google_cloud_run_v2_service" "portal" {
         name  = "CLOUD_DEPLOYMENT"
         value = "1"
       }
+      dynamic "env" {
+        for_each = var.azure_openai_endpoint != "" ? {
+          AZURE_OPENAI_ENDPOINT   = var.azure_openai_endpoint
+          AZURE_OPENAI_DEPLOYMENT = var.azure_openai_deployment
+          AUTO_DOCUMENT_REVIEW    = var.auto_document_review ? "1" : "0"
+        } : {}
+        content {
+          name  = env.key
+          value = env.value
+        }
+      }
+      dynamic "env" {
+        for_each = var.azure_openai_key_secret != "" ? [var.azure_openai_key_secret] : []
+        content {
+          name = "AZURE_OPENAI_API_KEY"
+          value_source {
+            secret_key_ref {
+              secret  = env.value
+              version = "latest"
+            }
+          }
+        }
+      }
     }
   }
-  depends_on = [google_project_iam_member.sql_client, google_storage_bucket_iam_member.documents, google_secret_manager_secret_iam_member.database, google_secret_manager_secret_iam_member.session]
+  depends_on = [google_secret_manager_secret_iam_member.foundry, google_project_iam_member.sql_client, google_storage_bucket_iam_member.documents, google_secret_manager_secret_iam_member.database, google_secret_manager_secret_iam_member.session]
 }
 resource "google_cloud_run_v2_service_iam_member" "public" {
   count    = var.deploy_app ? 1 : 0
@@ -283,3 +306,27 @@ resource "google_billing_budget" "demo" {
   depends_on = [google_project_service.apis]
 }
 data "google_project" "current" { project_id = var.project_id }
+
+# Optional Azure inference connection. Secrets remain outside Terraform state.
+variable "azure_openai_endpoint" {
+  type    = string
+  default = ""
+}
+variable "azure_openai_deployment" {
+  type    = string
+  default = ""
+}
+variable "azure_openai_key_secret" {
+  type    = string
+  default = ""
+}
+variable "auto_document_review" {
+  type    = bool
+  default = false
+}
+resource "google_secret_manager_secret_iam_member" "foundry" {
+  count     = var.azure_openai_key_secret != "" ? 1 : 0
+  secret_id = var.azure_openai_key_secret
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.app.email}"
+}

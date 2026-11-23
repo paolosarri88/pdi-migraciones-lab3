@@ -1,0 +1,22 @@
+"""Criterios académicos de admisibilidad documental; no son requisitos legales."""
+DOCUMENT_RULES = {
+ 'identidad': {'title':'Documento de identidad de prueba','description':'Una copia ficticia de una cédula, DNI o pasaporte. Debe permitir leer el nombre, un identificador y el tipo de documento. Una foto de rostro sola no identifica un documento.','fields':['Tipo de documento','Nombre de la persona ficticia','Identificador de prueba','Emisor o país'], 'examples':['CEDULA DE IDENTIDAD - DEMOSTRACION','Nombre: Persona de prueba','Identificador: DEMO-001','Emisor: Registro ficticio'], 'source':'https://www.pdichile.cl/tr%C3%A1mites-online'},
+ 'domicilio': {'title':'Antecedente de domicilio de prueba','description':'Por ejemplo, una cuenta ficticia de luz, agua, gas, internet o un certificado ficticio de domicilio. Para esta simulación debe mostrar nombre, dirección, comuna, fecha y emisor. No equivale a acreditar una residencia migratoria.','fields':['Nombre de la persona ficticia','Dirección y comuna','Fecha de emisión','Empresa o institución emisora'], 'examples':['COMPROBANTE DE DOMICILIO - DEMOSTRACION','Nombre: Persona de prueba','Direccion: Calle Ficticia 123, Santiago','Fecha: 23-11-2026','Emisor: Servicios de Ejemplo'], 'source':'https://www.pdichile.cl/instituci%C3%B3n/unidades/migraciones'},
+ 'residencia': {'title':'Antecedente de residencia de prueba','description':'Una resolución, permiso o certificado ficticio que indique el tipo de residencia y su titular. No es una cuenta de servicios ni una solicitud para obtener residencia definitiva. Usa el ejemplo académico o consulta el canal oficial de SERMIG.','fields':['Nombre e identificador de prueba','Tipo de residencia','Número de resolución o permiso','Fecha y emisor'], 'examples':['PERMISO DE RESIDENCIA - DEMOSTRACION','Nombre: Persona de prueba','Identificador: DEMO-001','Tipo: Residencia definitiva ficticia','Resolucion: DEMO-2026-001','Fecha: 23-11-2026','Emisor: Servicio ficticio de migraciones'], 'source':'https://serviciomigraciones.cl/'},
+ 'viaje': {'title':'Documento de viaje o ingreso de prueba','description':'Una copia ficticia de pasaporte o un comprobante ficticio de viaje/ingreso, según el antecedente solicitado. Debe vincular a una persona con el viaje: identificación y, si es un movimiento, fecha y paso fronterizo o trayecto.','fields':['Nombre e identificador de prueba','Tipo de documento o movimiento','Fecha de viaje/ingreso si corresponde','País, trayecto o paso fronterizo si corresponde'], 'examples':['REGISTRO DE VIAJE - DEMOSTRACION','Nombre: Persona de prueba','Identificador: DEMO-001','Movimiento: Ingreso ficticio','Fecha: 20-11-2026','Paso: Aeropuerto de Santiago'], 'source':'https://www.pdichile.cl/tr%C3%A1mites-online'},
+ 'registro': {'title':'Antecedente del registro de prueba','description':'Una copia ficticia de un registro anterior de visa o un comprobante asociado. Debe indicar a quién corresponde, qué registro es, su número o referencia y la fecha.','fields':['Nombre de la persona ficticia','Tipo de registro','Número o referencia','Fecha y emisor'], 'examples':['REGISTRO DE VISA - DEMOSTRACION','Nombre: Persona de prueba','Registro: DEMO-VISA-001','Fecha: 23-11-2026','Emisor: Oficina ficticia'], 'source':'https://www.pdichile.cl/instituci%C3%B3n/unidades/migraciones'},
+ 'complementario': {'title':'Antecedente complementario de prueba','description':'Un respaldo ficticio relacionado con la observación del funcionario. Incluye el folio de la solicitud, explica qué antecedente aporta y señala su fecha y origen. Revisa primero la observación del expediente.','fields':['Folio relacionado','Descripción de lo que acredita','Fecha','Origen o emisor'], 'examples':['ANTECEDENTE COMPLEMENTARIO - DEMOSTRACION','Folio: SOL-2026-0001','Detalle: Respaldo ficticio relacionado con la observacion','Fecha: 23-11-2026','Origen: Institucion ficticia'], 'source':None}
+}
+
+def rule_key(name):
+    name=name.lower()
+    if 'identidad' in name or 'identificación' in name:return 'identidad'
+    if 'domicilio' in name:return 'domicilio'
+    if 'residencia' in name:return 'residencia'
+    if 'viaj' in name or 'ingreso' in name:return 'viaje'
+    if 'registro' in name:return 'registro'
+    return 'complementario'
+
+def help_for_catalog(catalog):
+    names={name for c in catalog for name in c['docs']}|{'Otros antecedentes'}
+    return {name:{**DOCUMENT_RULES[rule_key(name)],'key':rule_key(name)} for name in names}

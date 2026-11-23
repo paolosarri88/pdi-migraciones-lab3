@@ -3,3 +3,4 @@ gunicorn>=23,<24
 psycopg[binary]>=3.2,<4
 google-cloud-storage>=3,<4
 tzdata>=2025.2
+PyMuPDF>=1.26,<2

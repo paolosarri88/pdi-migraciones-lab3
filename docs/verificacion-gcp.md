@@ -34,3 +34,17 @@ Publicada el 23 de noviembre de 2026 en la revisión `pdi-portal-00003-w82`, ima
 ClaveÚnica e integraciones institucionales continúan simuladas. No se deben ingresar contraseñas ni documentos reales. El eslogan anterior era texto del prototipo y se reemplazó por «Portal de atención migratoria».
 
 Ajuste final de contadores publicado en `pdi-portal-00004-sqt` (`portal:20261123194359`). Comprobación en el panel funcionario: el contador de antecedentes pendientes muestra 17 y su filtro muestra exactamente 17 solicitudes. Código sincronizado en main y Paolo.
+
+## Avisos accionables, coordinación de citas y ayudas documentales
+
+Actualización del 23 de noviembre de 2026, revisión `pdi-portal-00005-b9d`, imagen `portal:20261123203252`.
+
+- Quince pruebas aprobadas con SQLite temporal y quince con PostgreSQL real en una base temporal aislada (251,831 segundos). La base de validación se eliminó al finalizar.
+- Nuevas regresiones: avisos derivados del estado aunque las notificaciones anteriores estén leídas; solicitud ciudadana de atención, coordinación por funcionario, confirmación y desaparición del aviso; ayuda y ejemplos PDF; validación del resultado IA; conservación de revisión manual cuando el proveedor falla.
+- Terraform validado; plan aplicado con cero recursos nuevos, una actualización y cero eliminaciones. No se habilitó IA ni se crearon recursos Azure.
+- En navegador local: acceso ciudadano blanco, ayuda desplegable de identidad y residencia, solicitud de atención registrada, avisos de documentos y confirmación simultáneos y apertura de la cita desde el panel de avisos.
+- En navegador público: landing actualizada, avisos de los documentos actualmente pendientes, botón de calendario primario azul y formulario para solicitar atención vinculado a un expediente. Se preservaron los registros del usuario; no se enviaron nuevas solicitudes de prueba en su cuenta pública durante esta verificación.
+- Se comprobó el renderizado real de un PDF y el contrato de respuesta mediante transporte simulado. Las pruebas con proveedor simulado verifican el software: no demuestran precisión ni una llamada real a Foundry.
+- Diagnóstico Azure: la sesión UAI se renovó correctamente; el directorio universitario no devolvió suscripciones accesibles. La identidad Bytequest guardada tenía token vencido y el usuario informó que el inicio de sesión no reconocía la cuenta. Es necesario confirmar la cuenta/suscripción vigente del laboratorio. La inferencia real y evaluación de calidad permanecen pendientes.
+
+Las guías de uso, criterios, arquitectura, matriz de pruebas y pendientes se incluyen en `docs/`. La automatización de documentos está preparada pero desactivada, con revisión manual disponible.

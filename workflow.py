@@ -27,24 +27,24 @@ def document_overview(record,docs=None):
     return {'display_status':record['status'],'document_tone':'process'}
 
 def active_notices(uid):
+    # Actionable notices are derived from current state, never dismissed by reading.
     items=ctx['rows']('SELECT * FROM notifications WHERE user_id=? AND read=0 ORDER BY id DESC',(uid,))
     result=[]
+    for r in ctx['rows']('SELECT * FROM requests WHERE user_id=? ORDER BY updated DESC',(uid,)):
+        if document_overview(r)['display_status']=='Requiere antecedentes':
+            result.append({'id':f"request-{r['id']}",'title':'Antecedentes pendientes','body':f"{r['folio']}: revisa los documentos pendientes u observados y entrega lo solicitado.",'target':f"/solicitudes/{r['id']}?accion=adjuntar",'read':0,'created':r['updated'],'action_required':True})
+    for a in ctx['rows']("SELECT * FROM appointments WHERE user_id=? AND status='Pendiente de confirmación' ORDER BY date,time",(uid,)):
+        result.append({'id':f"appointment-{a['id']}",'title':'Confirma tu próxima cita','body':f"Atención el {a['date']} a las {a['time']}. Revisa el horario y confirma tu asistencia.",'target':f"/citas?cita={a['id']}",'read':0,'created':a['date'],'action_required':True})
     for n in items:
         u=urlparse(n['target']);q=parse_qs(u.query)
-        if u.path=='/citas' and q.get('cita'):
-            a=ctx['one']('SELECT status FROM appointments WHERE id=? AND user_id=?',(q['cita'][0],uid))
-            if not a or a['status']!='Pendiente de confirmación':continue
-        if q.get('accion')==['adjuntar']:
-            match=re.match(r'/solicitudes/(\d+)',u.path)
-            r=ctx['one']('SELECT status FROM requests WHERE id=? AND user_id=?',(int(match[1]),uid)) if match else None
-            if not r or r['status']!='Requiere antecedentes':continue
+        if q.get('accion')==['adjuntar'] or (u.path=='/citas' and q.get('cita')):continue
         result.append(n)
     return result
 
 def install(context):
     ctx.update(context)
     c=ctx['connect'](ctx['DATA'],initialize=True)
-    columns={'users':{'demo_run':'TEXT'},'documents':{'requirement':'TEXT','review_status':"TEXT DEFAULT 'En revisión'",'review_note':'TEXT','reviewed_at':'TEXT','reviewed_by':'INTEGER','superseded':'INTEGER DEFAULT 0'},'events':{'kind':"TEXT DEFAULT 'status'"},'appointments':{'reminders':"TEXT DEFAULT '[]'",'reminder_phone':"TEXT DEFAULT ''"}}
+    columns={'requests':{'appointment_requested':'INTEGER DEFAULT 0'},'users':{'demo_run':'TEXT'},'documents':{'ai_review':'TEXT','requirement':'TEXT','review_status':"TEXT DEFAULT 'En revisión'",'review_note':'TEXT','reviewed_at':'TEXT','reviewed_by':'INTEGER','superseded':'INTEGER DEFAULT 0'},'events':{'kind':"TEXT DEFAULT 'status'"},'appointments':{'reminders':"TEXT DEFAULT '[]'",'reminder_phone':"TEXT DEFAULT ''"}}
     import os
     for table, additions in columns.items():
         if os.environ.get('DB_HOST'):
@@ -85,6 +85,34 @@ def install(context):
         db().execute('UPDATE events SET kind=? WHERE id=(SELECT MAX(id) FROM events WHERE request_id=?)',(kind,r['id']))
         notify(r['user_id'],title,f"{r['folio']} · {doc['requirement']}. "+(note or 'Consulta el detalle de tu solicitud.'),f"/solicitudes/{r['id']}"+('?accion=adjuntar' if status=='Rechazado' else '')+(''+('&' if status=='Rechazado' else '?')+f'documento={did}'))
         return jsonify(ok=True,status=overall)
+
+    @app.get('/api/document-examples/<key>')
+    def document_example(key):
+        import io
+        from flask import send_file
+        from document_rules import DOCUMENT_RULES
+        if key not in DOCUMENT_RULES:return fail('Ejemplo no encontrado.',404)
+        rule=DOCUMENT_RULES[key]
+        lines=['DOCUMENTO FICTICIO. SIN VALIDEZ LEGAL.']+rule['examples']+['Solo para probar el portal academico.']
+        return send_file(io.BytesIO(ctx['simple_pdf'](rule['title'],lines)),mimetype='application/pdf',download_name='ejemplo-'+key+'.pdf',as_attachment=True)
+
+    @app.post('/api/requests/<int:rid>/appointment-request')
+    @auth()
+    def request_appointment(rid):
+        r=ctx['request_record'](rid)
+        if not r:return fail('Solicitud no encontrada.',404)
+        if g.user['role']!='citizen':return fail('Esta opción corresponde al portal ciudadano.',403)
+        if r['status'] in FINAL:return fail('El expediente está cerrado. Inicia una nueva solicitud si necesitas otra atención.',409)
+        if r['appointment_requested']:return fail('Ya solicitaste atención para este expediente. El funcionario debe coordinarla.',409)
+        if one("SELECT id FROM appointments WHERE request_id=? AND status NOT IN ('Cancelada','Finalizada')",(rid,)):return fail('Ya tienes una cita vigente para este expediente. Revísala en Mis citas.',409)
+        note=str((request.get_json(silent=True) or {}).get('reason','')).strip()
+        if len(note)>1000:return fail('El motivo no puede superar 1.000 caracteres.')
+        db().execute('UPDATE requests SET appointment_requested=1,updated=? WHERE id=?',(now(),rid))
+        event(rid,r['status'],'El ciudadano solicitó atención presencial. '+(note or 'Coordinación de atención para este expediente.'))
+        db().execute("UPDATE events SET kind='appointment-request' WHERE id=(SELECT MAX(id) FROM events WHERE request_id=?)",(rid,))
+        for u in ctx['rows']("SELECT id FROM users WHERE role IN ('staff','admin') AND active=1"):
+            notify(u['id'],'Solicitud de atención presencial',r['folio']+': revisar y coordinar una cita.',f'/expedientes/{rid}')
+        return jsonify(ok=True),201
 
     @app.patch('/api/appointments/<int:aid>/reminders')
     @auth()

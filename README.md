@@ -35,7 +35,7 @@ El inicio de sesión determina el portal. No hay un selector de roles. El tótem
 ## Recorrido para probar
 
 1. Entrar como ciudadano. Los contadores filtran solicitudes y los avisos llevan al expediente o cita correspondiente.
-2. Abrir SOL-2026-0002, adjuntar un PDF, PNG o JPG de prueba (hasta 5 MB) y enviar antecedentes a revisión.
+2. Abrir un expediente con antecedentes pendientes, adjuntar un PDF, PNG o JPG ficticio en el requisito correspondiente (hasta 5 MB) y enviar antecedentes a revisión cuando corresponda. Los ejemplos iniciales pueden haber sido modificados por otras pruebas.
 3. Confirmar la próxima cita desde «Mis citas». Sus fechas se calculan al crear los datos iniciales.
 4. Iniciar otra solicitud desde el catálogo, completar sus campos, revisar y enviar. Descargar su comprobante PDF.
 5. Cerrar sesión y entrar como funcionario. Buscar expedientes, registrar una observación y cambiar su estado, asignárselo o programar una cita.
@@ -53,7 +53,7 @@ En modo local: SQLite en `data/portal.sqlite3`, archivos en `data/files/` y clav
 
 La misma versión soporta ejecución local y despliegue GCP con Terraform. El código selecciona PostgreSQL cuando existe `DB_HOST` y almacenamiento privado cuando existe `DOCUMENT_BUCKET`. No se ha desplegado VPN, WAF ni conexión a sistemas institucionales reales. La simulación institucional vive en el mismo servidor de demostración, sin afirmar que constituye una red on-premise real.
 
-El módulo de asistencia del funcionario admite Azure OpenAI mediante variables `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY` y `AZURE_OPENAI_DEPLOYMENT`. Sin ellas, informa que no está configurado y no inventa una respuesta de IA. Envía los antecedentes escritos y nombres de archivos; no realiza OCR ni lee el contenido de los documentos. La respuesta es apoyo preliminar y la decisión queda en el funcionario. Nunca agregar claves a Git.
+El módulo de asistencia del funcionario admite Azure OpenAI mediante variables `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY` y `AZURE_OPENAI_DEPLOYMENT`. Sin ellas, informa que no está configurado y no inventa una respuesta de IA. La asistencia del funcionario resume antecedentes escritos y nombres de archivos. Un adaptador separado permite prevalidación visual de archivos nuevos cuando se configura Azure y `AUTO_DOCUMENT_REVIEW=1`: puede aceptar u observar el archivo académico, o derivarlo a revisión manual. No resuelve solicitudes completas y el funcionario puede corregirlo. La llamada real y su calidad permanecen pendientes de comprobar con una sesión Azure válida. Nunca agregar claves a Git.
 
 ## Catálogo y diseño
 
@@ -68,7 +68,7 @@ python3 -m unittest discover -s tests -v
 node --check static/app.js
 ```
 
-Seis pruebas de integración, ejecutables contra SQLite o una base PostgreSQL aislada con nombre `pdi_validation_*`, cubren autenticación y CSRF, aislamiento entre ciudadanos, documentos, reenvío de antecedentes, citas, llegada/atención/salida, administración y simuladores institucionales. Las pruebas usan una base temporal separada.
+Quince pruebas de integración, ejecutables contra SQLite o una base PostgreSQL aislada con nombre `pdi_validation_*`, cubren autenticación y CSRF, aislamiento entre ciudadanos, documentos, reenvío de antecedentes, citas, llegada/atención/salida, administración y simuladores institucionales. Las pruebas usan una base temporal separada.
 
 ## Trabajo compartido
 
@@ -77,3 +77,15 @@ Seis pruebas de integración, ejecutables contra SQLite o una base PostgreSQL ai
 ### Actualización de experiencia y documentos
 
 Ingreso con RUN ficticio `00.000.001-9` o correo de demostración (misma clave ciudadana). No se conecta con ClaveÚnica real. Búsqueda inmediata por trámite y folio, control temprano de duplicados, documentos separados por requisito, revisión individual con versiones e historial, avisos que dejan de pedir acciones completadas y validaciones en español. Las citas confirmadas permiten descargar un archivo `.ics` con varios recordatorios; el teléfono es una preferencia de prueba y no se envían SMS.
+
+## Guías para la entrega
+
+- [Replicar infraestructura GCP](docs/despliegue-gcp.md).
+- [Ejecutar y demostrar la PoC](docs/ejecutar-poc.md).
+- [Estado de entrega y frentes compartidos](docs/estado-entrega.md).
+- [Arquitectura realmente desplegada](docs/arquitectura-poc.md).
+- [Historias y matriz de pruebas](docs/matriz-pruebas.md).
+- [Criterios de documentos y evaluación IA](docs/criterios-documentales-ia.md).
+- [Conectar Foundry](docs/conectar-foundry.md).
+
+Los avisos accionables se reconstruyen desde documentos y citas pendientes, aunque se hayan leído. En Mis citas se puede solicitar coordinación de atención para un expediente activo sin cita; el funcionario agenda y luego el ciudadano confirma. Las ayudas desplegables explican cada requisito y ofrecen PDF ficticios de ejemplo.

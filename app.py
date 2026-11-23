@@ -13,6 +13,8 @@ from functools import wraps
 from pathlib import Path
 from zoneinfo import ZoneInfo
 from flask import Flask, g, jsonify, request, session, send_file, send_from_directory
+from document_rules import help_for_catalog
+from document_ai import inspect_document, enabled as document_ai_enabled
 from werkzeug.security import check_password_hash, generate_password_hash
 from persistence import connect, get_document, put_document
 
@@ -170,7 +172,7 @@ if os.environ.get('DB_HOST'):
 @app.get('/api/bootstrap')
 def bootstrap():
     if 'csrf' not in session:session['csrf']=secrets.token_urlsafe(32)
-    return jsonify(user=actor(),csrf=session['csrf'],catalog=CATALOG,external=EXTERNAL,statuses=STATUSES,ai_available=bool(os.environ.get('AZURE_OPENAI_ENDPOINT') and os.environ.get('AZURE_OPENAI_API_KEY')),today=str(datetime.now(ZoneInfo('America/Santiago')).date()))
+    return jsonify(user=actor(),csrf=session['csrf'],catalog=CATALOG,document_help=help_for_catalog(CATALOG),external=EXTERNAL,statuses=STATUSES,document_ai_available=document_ai_enabled(),ai_available=bool(os.environ.get('AZURE_OPENAI_ENDPOINT') and os.environ.get('AZURE_OPENAI_API_KEY')),today=str(datetime.now(ZoneInfo('America/Santiago')).date()))
 
 attempts={}
 @app.post('/api/login')
@@ -267,6 +269,20 @@ def upload(rid):
     db().execute('UPDATE documents SET superseded=1 WHERE request_id=? AND requirement=? AND superseded=0',(rid,requirement))
     cur=db().execute('INSERT INTO documents(request_id,name,path,mime,size,created,requirement) VALUES(?,?,?,?,?,?,?)',(rid,name,path,mime,len(raw),now(),requirement))
     event(rid,r['status'],f'Antecedente incorporado: {name}.')
+    if document_ai_enabled():
+        try:result=inspect_document(raw,mime,requirement)
+        except Exception:result={'decision':'manual','reason':'No se pudo completar la lectura automática. El funcionario revisará el archivo.','source':'Control de disponibilidad','rules_version':'academico-v1'}
+        if result:
+            result['created']=now()
+            status={'aceptar':'Aceptado','observar':'Rechazado','manual':'En revisión'}[result['decision']]
+            note=('Prevalidación automática de prueba: ' if result['source']=='Microsoft Foundry' else '')+result['reason']
+            db().execute('UPDATE documents SET ai_review=?,review_status=?,review_note=?,reviewed_at=? WHERE id=?',(dumps(result),status,note,now(),cur.lastrowid))
+            title={'aceptar':'Documento aceptado por IA','observar':'Documento observado por IA','manual':'Documento pendiente de revisión manual'}[result['decision']]
+            event(rid,title,requirement+': '+note)
+            kind='document-rejected' if status=='Rechazado' else 'document-accepted' if status=='Aceptado' else 'document-review'
+            db().execute('UPDATE events SET kind=? WHERE id=(SELECT MAX(id) FROM events WHERE request_id=?)',(kind,rid))
+            if status=='Rechazado':db().execute("UPDATE requests SET status='Requiere antecedentes' WHERE id=?",(rid,))
+            notify(r['user_id'],title,r['folio']+': '+note,f'/solicitudes/{rid}')
     db().execute('UPDATE requests SET updated=? WHERE id=?',(now(),rid))
     return jsonify(id=cur.lastrowid),201
 
@@ -306,15 +322,17 @@ def appointments():
 def schedule():
     d=request.get_json(silent=True) or {};rid=d.get('request_id');r=request_record(rid)
     if not r:return fail('Selecciona un expediente válido.')
+    if r['status'] in ('Resuelta','Cerrada','Rechazada'):return fail('No se puede agendar un expediente cerrado.',409)
     date=str(d.get('date',''));tm=str(d.get('time',''))
     try:dt=datetime.strptime(date+' '+tm,'%Y-%m-%d %H:%M')
     except ValueError:return fail('Fecha u hora inválida.')
     if dt.date()<datetime.now(ZoneInfo('America/Santiago')).date():return fail('No puedes agendar una fecha pasada.')
     if tm not in ['09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','14:00','14:30','15:00','15:30']:return fail('Elige un horario de atención disponible.')
     if one("SELECT id FROM appointments WHERE request_id=? AND status NOT IN ('Cancelada','Finalizada')",(rid,)):return fail('Este expediente ya tiene una cita vigente.',409)
+    if one("SELECT id FROM appointments WHERE date=? AND time=? AND status NOT IN ('Cancelada','Finalizada')",(date,tm)):return fail('Ese horario ya está reservado. Selecciona otro.',409)
     code='CITA-'+secrets.token_hex(3).upper()
     cur=db().execute('INSERT INTO appointments(request_id,user_id,date,time,office,status,code,reason) VALUES(?,?,?,?,?,?,?,?)',(rid,r['user_id'],date,tm,OFFICE,'Pendiente de confirmación',code,str(d.get('reason','Revisión de antecedentes'))[:500]))
-    db().execute("UPDATE requests SET status='Cita programada',updated=? WHERE id=?",(now(),rid));event(rid,'Cita programada',f'Atención presencial agendada para {date} a las {tm}.')
+    db().execute("UPDATE requests SET status='Cita programada',appointment_requested=0,updated=? WHERE id=?",(now(),rid));event(rid,'Cita programada',f'Atención presencial agendada para {date} a las {tm}.')
     notify(r['user_id'],'Nueva cita programada','Confirma tu asistencia en Mis citas.',f'/citas?cita={cur.lastrowid}')
     return jsonify(ok=True,code=code),201
 
