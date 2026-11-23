@@ -7,6 +7,8 @@ import unittest
 from pathlib import Path
 
 TMP=tempfile.TemporaryDirectory()
+if os.environ.get('DB_HOST') and not os.environ.get('DB_NAME','').startswith('pdi_validation_'):
+    raise RuntimeError('Las pruebas cloud requieren una base aislada con prefijo pdi_validation_.')
 os.environ['PDI_DATA_DIR']=TMP.name
 spec=importlib.util.spec_from_file_location('portal',Path(__file__).parents[1]/'app.py')
 portal=importlib.util.module_from_spec(spec);spec.loader.exec_module(portal)

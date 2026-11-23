@@ -1,5 +1,6 @@
 .DS_Store
 .env
+.env.*
 .venv/
 __pycache__/
 data/
@@ -9,3 +10,5 @@ data/
 *.tfvars
 !*.tfvars.example
 test-results/
+*.tfplan
+*.tfvars.json

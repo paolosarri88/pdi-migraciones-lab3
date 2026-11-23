@@ -1,0 +1,3 @@
+project_id      = "TU-PROYECTO-GCP"
+billing_account = "TU-CUENTA-DE-FACTURACION"
+region          = "us-central1"

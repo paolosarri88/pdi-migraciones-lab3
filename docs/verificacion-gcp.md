@@ -1,0 +1,22 @@
+# Verificación del despliegue · 23 de noviembre de 2026
+
+URL: https://pdi-portal-vwjcdgy22a-uc.a.run.app
+
+Proyecto: `pdi-lab3-paolo-20261123`. Región: `us-central1`.
+
+Imagen desplegada: `us-central1-docker.pkg.dev/pdi-lab3-paolo-20261123/pdi-images/portal@sha256:a4986f7cf9dcce38e9aa0d7135107e48675a1af9b38a5b8ea95bfb721f966085`.
+
+## Resultados
+
+- Las seis pruebas de integración pasan con SQLite local.
+- Las seis pruebas pasan con PostgreSQL real en una base temporal aislada `pdi_validation_*` de Cloud SQL. Esa base temporal se eliminó al finalizar y no alteró los registros iniciales del portal publicado.
+- La imagen del contenedor arrancó dentro de Cloud Build y comprobó Flask, zona horaria, controlador PostgreSQL, librería de Cloud Storage y los 11 tipos del catálogo.
+- `/health` en la URL pública respondió correctamente.
+- Las cuentas ciudadana, funcionaria y administradora iniciaron sesión por HTTPS.
+- La cuenta ciudadana principal conserva sus seis expedientes de ejemplo.
+- El documento precargado del expediente 2 se recuperó desde Cloud Storage mediante la API autenticada.
+- Un nuevo expediente ficticio `SOL-2026-0037` se creó con una cuenta ciudadana secundaria, se adjuntó un PDF y se recuperó el mismo archivo. La sesión independiente del funcionario pudo consultar el expediente. Se dejó ese registro marcado en su descripción como comprobación del despliegue.
+- Administración informa persistencia en Cloud SQL PostgreSQL y Cloud Storage privado.
+- Terraform creó un presupuesto de avisos por US$40 de consumo bruto mensual, con umbrales de 25%, 50%, 75% y 100%. Es un aviso, no un tope automático de gasto.
+
+La integración real con Microsoft Foundry sigue pendiente de una suscripción y despliegue Azure disponibles. El portal no presenta una respuesta ficticia como si proviniera de un modelo real. Las integraciones institucionales y la identidad ciudadana permanecen simuladas.

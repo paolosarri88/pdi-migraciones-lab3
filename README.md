@@ -2,6 +2,14 @@
 
 Prototipo académico UAI. No es un servicio oficial de PDI. Solo utiliza personas, expedientes y documentos ficticios.
 
+## Probar y desplegar en Google Cloud
+
+Portal publicado: https://pdi-portal-vwjcdgy22a-uc.a.run.app
+
+La misma URL se puede abrir desde otro computador sin clonar este repositorio. [Resultados de verificación](docs/verificacion-gcp.md).
+
+La configuración cloud ejecuta la web y la API en Cloud Run, los registros en Cloud SQL PostgreSQL y los documentos en Cloud Storage privado. Terraform y el script de despliegue están incluidos. Consulta [la guía de despliegue](docs/despliegue-gcp.md) para replicar la infraestructura, conocer los costos y cerrar los recursos después de la evaluación.
+
 ## Ejecutar en el computador
 
 Requiere Python 3.11 o superior.
@@ -39,11 +47,11 @@ Las fechas de los datos precargados se fijan el día del primer arranque. Para o
 
 ## Qué persiste
 
-SQLite en `data/portal.sqlite3`, archivos en `data/files/` y clave local de sesión en `data/.session-key`. La primera ejecución crea 15 cuentas, 36 solicitudes con documentos, 5 citas y registros institucionales ficticios. La carpeta `data/` queda fuera de Git. Las contraseñas se almacenan mediante hash; los permisos y propiedad de expedientes se verifican en el servidor. Las operaciones de modificación requieren protección CSRF.
+En modo local: SQLite en `data/portal.sqlite3`, archivos en `data/files/` y clave local de sesión en `data/.session-key`. En GCP: Cloud SQL, Cloud Storage y Secret Manager; las actualizaciones del contenedor no borran los registros ni los documentos. La primera ejecución crea 15 cuentas, 36 solicitudes con documentos, 5 citas y registros institucionales ficticios. La carpeta `data/` queda fuera de Git. Las contraseñas se almacenan mediante hash; los permisos y propiedad de expedientes se verifican en el servidor. Las operaciones de modificación requieren protección CSRF.
 
 ## IA y alcance de la infraestructura
 
-Esta versión es funcional localmente. **Todavía no está desplegada en GCP ni provisionada con Terraform**. SQLite y archivos locales deberán migrarse a la persistencia cloud antes del despliegue definitivo. No se ha desplegado VPN, WAF ni conexión a sistemas institucionales reales. La simulación institucional vive en el mismo servidor de demostración, sin afirmar que constituye una red on-premise real.
+La misma versión soporta ejecución local y despliegue GCP con Terraform. El código selecciona PostgreSQL cuando existe `DB_HOST` y almacenamiento privado cuando existe `DOCUMENT_BUCKET`. No se ha desplegado VPN, WAF ni conexión a sistemas institucionales reales. La simulación institucional vive en el mismo servidor de demostración, sin afirmar que constituye una red on-premise real.
 
 El módulo de asistencia del funcionario admite Azure OpenAI mediante variables `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY` y `AZURE_OPENAI_DEPLOYMENT`. Sin ellas, informa que no está configurado y no inventa una respuesta de IA. Envía los antecedentes escritos y nombres de archivos; no realiza OCR ni lee el contenido de los documentos. La respuesta es apoyo preliminar y la decisión queda en el funcionario. Nunca agregar claves a Git.
 
@@ -60,7 +68,7 @@ python3 -m unittest discover -s tests -v
 node --check static/app.js
 ```
 
-Seis pruebas de integración cubren autenticación y CSRF, aislamiento entre ciudadanos, documentos, reenvío de antecedentes, citas, llegada/atención/salida, administración y simuladores institucionales. Las pruebas usan una base temporal separada.
+Seis pruebas de integración, ejecutables contra SQLite o una base PostgreSQL aislada con nombre `pdi_validation_*`, cubren autenticación y CSRF, aislamiento entre ciudadanos, documentos, reenvío de antecedentes, citas, llegada/atención/salida, administración y simuladores institucionales. Las pruebas usan una base temporal separada.
 
 ## Trabajo compartido
 

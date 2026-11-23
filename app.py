@@ -14,6 +14,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 from flask import Flask, g, jsonify, request, session, send_file, send_from_directory
 from werkzeug.security import check_password_hash, generate_password_hash
+from persistence import connect, get_document, put_document
 
 ROOT = Path(__file__).parent
 DATA = Path(os.environ.get('PDI_DATA_DIR', ROOT / 'data'))
@@ -24,7 +25,7 @@ if not keyfile.exists():
     keyfile.write_text(secrets.token_hex(32)); keyfile.chmod(0o600)
 app = Flask(__name__, static_folder='static')
 app.config.update(SECRET_KEY=os.environ.get('SECRET_KEY', keyfile.read_text()), MAX_CONTENT_LENGTH=9*1024*1024,
-                  SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax', PERMANENT_SESSION_LIFETIME=timedelta(hours=8))
+                  SESSION_COOKIE_SECURE=os.environ.get('CLOUD_DEPLOYMENT')=='1', SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax', PERMANENT_SESSION_LIFETIME=timedelta(hours=8))
 STATUSES = ['Recibida', 'En revisión', 'Requiere antecedentes', 'Cita programada', 'Resuelta', 'Cerrada']
 OFFICE = 'Migraciones y Policía Internacional · Santiago'
 SOURCE = 'https://www.pdichile.cl/tr%C3%A1mites-online'
@@ -52,9 +53,8 @@ def now(): return datetime.now(ZoneInfo('America/Santiago')).isoformat(timespec=
 def dumps(x): return json.dumps(x, ensure_ascii=False)
 def db():
     if 'db' not in g:
-        g.db = sqlite3.connect(DATA/'portal.sqlite3', timeout=15)
+        g.db = connect(DATA)
         g.db.row_factory=sqlite3.Row
-        g.db.execute('PRAGMA foreign_keys=ON')
     return g.db
 def rows(sql,args=()): return [dict(r) for r in db().execute(sql,args).fetchall()]
 def one(sql,args=()):
@@ -93,7 +93,7 @@ def simple_pdf(title,lines):
     return out+f'trailer\n<< /Size {len(objs)+1} /Root 1 0 R >>\nstartxref\n{start}\n%%EOF'.encode()
 
 def init():
-    c=sqlite3.connect(DATA/'portal.sqlite3');c.execute('PRAGMA journal_mode=WAL')
+    c=connect(DATA, initialize=True)
     c.executescript('''
     CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY,name TEXT,email TEXT UNIQUE,password TEXT,role TEXT,document TEXT,nationality TEXT,phone TEXT,address TEXT,active INTEGER DEFAULT 1);
     CREATE TABLE IF NOT EXISTS requests(id INTEGER PRIMARY KEY,folio TEXT UNIQUE,user_id INTEGER REFERENCES users(id),type_id TEXT,status TEXT,description TEXT,details TEXT,created TEXT,updated TEXT,assigned_to INTEGER REFERENCES users(id),ai TEXT);
@@ -107,7 +107,7 @@ def init():
     CREATE TABLE IF NOT EXISTS institutional(id INTEGER PRIMARY KEY,person_code TEXT UNIQUE,user_id INTEGER REFERENCES users(id),identity_status TEXT,migration_status TEXT,entry_date TEXT,border TEXT,notes TEXT);
     CREATE TABLE IF NOT EXISTS query_log(id INTEGER PRIMARY KEY,user_id INTEGER,person_code TEXT,source TEXT,result TEXT,created TEXT);
     ''')
-    if c.execute('SELECT COUNT(*) FROM users').fetchone()[0]:c.close();return
+    if c.execute('SELECT COUNT(*) FROM users').fetchone()[0]:c.commit();c.close();return
     people=[('María Fernanda Rojas','ciudadano@demo.pdi.cl','Ciudadano2026!','citizen','DEMO-001','Perú'),('Javier Morales','funcionario@demo.pdi.cl','Funcionario2026!','staff','FUNC-001','Chile'),('Paolo Sarri','admin@demo.pdi.cl','Admin2026!','admin','ADMIN-001','Chile')]
     names=['Andrés Pérez','Valentina Castro','Lucía Torres','Diego Méndez','Camila Fuentes','Gabriel Silva','Sofía Mendoza','Mateo Ramírez','Isabel Soto','Nicolás Herrera','Daniela López','Tomás Rivas']
     for i,n in enumerate(names):people.append((n,f'persona{i+2}@demo.pdi.cl','Ciudadano2026!','citizen',f'DEMO-{i+2:03}', ['Argentina','Colombia','Venezuela','Bolivia'][i%4]))
@@ -122,7 +122,7 @@ def init():
         c.execute('INSERT INTO events(request_id,status,note,actor_name,created) VALUES(?,?,?,?,?)',(i,'Recibida','Solicitud ingresada al portal.','Sistema de demostración',created))
         if status!='Recibida':c.execute('INSERT INTO events(request_id,status,note,actor_name,created) VALUES(?,?,?,?,?)',(i,status,'Adjunta un antecedente de ingreso complementario.' if status=='Requiere antecedentes' else 'Se actualizó el estado de tu solicitud.','Javier Morales',f'{today-timedelta(days=1)}T11:00:00-03:00'))
         raw=simple_pdf('DOCUMENTO DE DEMOSTRACION',[folio,'Datos ficticios. Sin validez legal.',desc[:85]])
-        path=f'seed-{i}.pdf';(DATA/'files'/path).write_bytes(raw)
+        path=f'seed-{i}.pdf';put_document(DATA,path,raw)
         c.execute('INSERT INTO documents(request_id,name,path,mime,size,created) VALUES(?,?,?,?,?,?)',(i,'antecedente_demo.pdf',path,'application/pdf',len(raw),created))
     appts=[(3,1,today+timedelta(days=2),'10:30','Pendiente de confirmación','CITA-1001'),(7,citizen_ids[0],today,'09:00','Confirmada','CITA-1002'),(8,citizen_ids[1],today,'09:30','Presente','CITA-1003'),(9,citizen_ids[2],today,'10:00','En atención','CITA-1004'),(1,1,today+timedelta(days=4),'11:00','Confirmada','CITA-1005')]
     for rid,uid,date,tm,status,code in appts:
@@ -133,6 +133,7 @@ def init():
     for uid,doc in c.execute("SELECT id,document FROM users WHERE role='citizen'").fetchall():
         missing=uid%3==1
         c.execute('INSERT INTO institutional(person_code,user_id,identity_status,migration_status,entry_date,border,notes) VALUES(?,?,?,?,?,?,?)',(doc,uid,'Identidad ficticia registrada','Registro incompleto' if missing else 'Registro encontrado',None if missing else str(today-timedelta(days=100)), 'Los Libertadores' if uid%2 else 'Aeropuerto de Santiago','Caso simulado. No se consultan antecedentes reales.'))
+    if os.environ.get('DB_HOST'):c.reset_sequences()
     c.commit();c.close()
 
 @app.before_request
@@ -161,6 +162,10 @@ def too_big(_):return fail('El archivo supera el tamaño permitido (5 MB).',413)
 
 @app.errorhandler(sqlite3.IntegrityError)
 def conflict(_):return fail('La operación entra en conflicto con un registro existente. Actualiza la vista.',409)
+
+if os.environ.get('DB_HOST'):
+    import psycopg
+    app.register_error_handler(psycopg.IntegrityError, conflict)
 
 @app.get('/api/bootstrap')
 def bootstrap():
@@ -244,7 +249,7 @@ def upload(rid):
     elif raw.startswith(b'\xff\xd8\xff'):mime='image/jpeg';ext='.jpg'
     else:return fail('Solo se admiten PDF, PNG o JPG válidos.')
     if len(rows('SELECT id FROM documents WHERE request_id=?',(rid,)))>=12:return fail('El expediente admite hasta 12 documentos.')
-    path=secrets.token_hex(20)+ext;(DATA/'files'/path).write_bytes(raw)
+    path=secrets.token_hex(20)+ext;put_document(DATA,path,raw,mime)
     cur=db().execute('INSERT INTO documents(request_id,name,path,mime,size,created) VALUES(?,?,?,?,?,?)',(rid,name,path,mime,len(raw),now()))
     event(rid,r['status'],f'Antecedente incorporado: {name}.')
     db().execute('UPDATE requests SET updated=? WHERE id=?',(now(),rid))
@@ -265,7 +270,7 @@ def resubmit(rid):
 def download(did):
     doc=one('SELECT * FROM documents WHERE id=?',(did,))
     if not doc or not request_record(doc['request_id']):return fail('Documento no encontrado.',404)
-    return send_file(DATA/'files'/doc['path'],mimetype=doc['mime'],download_name=doc['name'],as_attachment=request.args.get('download')=='1')
+    return send_file(get_document(DATA,doc['path']),mimetype=doc['mime'],download_name=doc['name'],as_attachment=request.args.get('download')=='1')
 
 @app.get('/api/requests/<int:rid>/receipt')
 @auth()
@@ -376,7 +381,7 @@ def analyze(rid):
 
 @app.get('/api/admin')
 @auth(admin=True)
-def admin_info():return jsonify(users=rows('SELECT id,name,email,role,document,active FROM users ORDER BY id'),counts={t:db().execute('SELECT COUNT(*) FROM '+t).fetchone()[0] for t in ['requests','documents','appointments','visits','query_log']},storage='SQLite local + archivos locales',ai_configured=bool(os.environ.get('AZURE_OPENAI_ENDPOINT')))
+def admin_info():return jsonify(users=rows('SELECT id,name,email,role,document,active FROM users ORDER BY id'),counts={t:one('SELECT COUNT(*) as total FROM '+t)['total'] for t in ['requests','documents','appointments','visits','query_log']},storage='Cloud SQL PostgreSQL + Cloud Storage privado' if os.environ.get('DB_HOST') else 'SQLite local + archivos locales',ai_configured=bool(os.environ.get('AZURE_OPENAI_ENDPOINT')))
 
 @app.patch('/api/admin/users/<int:uid>')
 @auth(admin=True)
