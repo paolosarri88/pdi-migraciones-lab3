@@ -15,7 +15,7 @@ python3 scripts/connect_foundry.py --project TU-PROYECTO-GCP --subscription TU-S
 python3 scripts/deploy.py --project TU-PROYECTO-GCP --billing-account TU-FACTURACION --phase app
 ```
 
-El primer script verifica el despliegue, obtiene la clave en memoria y la envía a Secret Manager por entrada estándar. Crea una configuración local ignorada por Git con nombres de recursos, no con la clave. El segundo aplica Terraform para permitir solo a la identidad de la aplicación leer ese secreto y publicar las referencias en Cloud Run. Quien ejecute estos pasos necesita los permisos correspondientes en ambas nubes.
+El primer script verifica el despliegue, obtiene la clave en memoria y la envía a Secret Manager por entrada estándar. Actualiza la configuración compartida de Terraform con nombres de recursos y la versión del secreto, nunca con la clave. El segundo aplica Terraform para permitir solo a la identidad de la aplicación leer ese secreto y publicar las referencias en Cloud Run. Quien ejecute estos pasos necesita los permisos correspondientes en ambas nubes.
 
 ## Comportamiento
 
@@ -30,3 +30,15 @@ El primer script verifica el despliegue, obtiene la clave en memoria y la envía
 Registrar nombre y versión real del modelo, región, resultado de una llamada desde el portal GCP, tiempos y errores, sin claves ni tokens. Ejecutar los casos definidos en `criterios-documentales-ia.md`. Hasta entonces la integración está preparada, pero no comprobada como requisito cumplido.
 
 Referencias: [crear despliegues con CLI/Bicep](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/how-to/create-model-deployments), [modelos con visión](https://learn.microsoft.com/azure/ai-foundry/openai/how-to/gpt-with-vision).
+
+## Conexión compartida del proyecto PDI
+
+Las referencias públicas del despliegue se conservan en `infra/foundry-config.auto.tfvars.json`: endpoint de Foundry, despliegue `gpt-4.1-mini`, secreto `pdi-foundry-key` y versión `1`. La clave permanece exclusivamente en Secret Manager. La revisión documental automática está activada para archivos nuevos desde los criterios v2. No crear otra configuración local con valores contradictorios sin revisar el plan.
+
+En el expediente del funcionario, el panel **Asistencia de revisión** permite pulsar **Analizar antecedentes**. Este endpoint lee el contenido de hasta tres archivos actuales por ejecución y guarda las recomendaciones por documento. No cambia decisiones documentales ni el estado del expediente. Utiliza los mismos criterios que la prevalidación al subir archivos nuevos.
+
+### Verificación del 24 de noviembre de 2026
+
+Se comprobó una respuesta HTTP 200 desde el endpoint de asistencia del portal y se ejecutó **Analizar antecedentes** en la interfaz del funcionario para SOL-2026-0013. La respuesta de Microsoft Foundry se mostró en pantalla y quedó como sugerencia interna; no se guardó ninguna decisión documental ni resolución. Pasaron 29 pruebas Python, la comprobación conjunta de JavaScript y la validación de Terraform. El plan aplicado cambió la imagen de Cloud Run e incorporó el permiso de lectura del secreto ya existente; no eliminó recursos.
+
+Esto verifica conectividad, no calidad documental: el modelo calificó el contenido ficticio como no confiable. Es necesario ajustar y evaluar el prompt con los criterios del proyecto antes de presentar sus recomendaciones como validación de documentos. La lectura visual automática sigue apagada.

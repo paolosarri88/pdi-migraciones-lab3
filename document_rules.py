@@ -8,8 +8,17 @@ DOCUMENT_RULES = {
  'complementario': {'title':'Antecedente complementario de prueba','description':'Un respaldo ficticio relacionado con la observación del funcionario. Incluye el folio de la solicitud, explica qué antecedente aporta y señala su fecha y origen. Revisa primero la observación del expediente.','fields':['Folio relacionado','Descripción de lo que acredita','Fecha','Origen o emisor'], 'examples':['ANTECEDENTE COMPLEMENTARIO - DEMOSTRACION','Folio: SOL-2026-0001','Detalle: Respaldo ficticio relacionado con la observacion','Fecha: 23-11-2026','Origen: Institucion ficticia'], 'source':None}
 }
 
+# Campos de la demostración: no son una certificación de autenticidad ni una pauta legal.
+DOCUMENT_RULES['identidad'].update(fields=['Tipo de documento','Nombre y apellidos','RUN o identificador personal','Número de documento','Fecha de nacimiento','Fecha de vencimiento','Emisor o país'], description='Cédula o DNI legible, incluso una simulación de texto. Debe contener todos los campos indicados; un CV no es identificación. Comprobar titular y vigencia.')
+DOCUMENT_RULES['pasaporte']={'title':'Pasaporte o documento de viaje','description':'Pasaporte legible, incluso una simulación de texto. Una reserva de vuelo o un CV no es pasaporte. Comprobar titular y vigencia.','fields':['Tipo de documento','Nombre y apellidos','Número de pasaporte','Fecha de nacimiento','Nacionalidad','Fecha de emisión','Fecha de vencimiento','País emisor'],'examples':['PASAPORTE - DEMOSTRACION','Nombre: Persona de prueba','Numero de pasaporte: DEMO-P001','Nacimiento: 1990-01-01','Nacionalidad: De ejemplo','Emision: 2025-01-01','Vencimiento: 2030-01-01','Pais emisor: Pais de ejemplo'],'source':None}
+DOCUMENT_RULES['alternativo']={'title':'Identificación o antecedente alternativo','description':'Cédula, pasaporte o constancia de extravío que identifique al titular y el documento extraviado. Una constancia de pérdida no necesita la vigencia del documento que ya no se posee.','fields':['Nombre y apellidos','Identificador personal o documento extraviado','Tipo de respaldo','Fecha','Emisor'],'examples':['CONSTANCIA DE EXTRAVIO - DEMOSTRACION','Nombre: Persona de prueba','Identificador: DEMO-001','Documento extraviado: Pasaporte DEMO-P001','Fecha: 2026-11-24','Emisor: Oficina de ejemplo'],'source':None}
+# Ejemplo coherente con el nuevo conjunto de campos.
+DOCUMENT_RULES['identidad']['examples']=['CEDULA DE IDENTIDAD - DEMOSTRACION','Nombre y apellidos: Persona de prueba','RUN: 00000001-9','Numero de documento: DEMO-ID001','Fecha de nacimiento: 1990-01-01','Fecha de vencimiento: 2030-01-01','Emisor: Registro de ejemplo']
+
 def rule_key(name):
     name=name.lower()
+    if 'alternativo' in name:return 'alternativo'
+    if 'pasaporte' in name or 'documento de viaje' in name:return 'pasaporte'
     if 'identidad' in name or 'identificación' in name:return 'identidad'
     if 'domicilio' in name:return 'domicilio'
     if 'residencia' in name:return 'residencia'

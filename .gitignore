@@ -12,3 +12,6 @@ data/
 test-results/
 *.tfplan
 *.tfvars.json
+
+# Public deployment references only; never place a key in this file.
+!infra/foundry-config.auto.tfvars.json

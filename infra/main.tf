@@ -264,7 +264,7 @@ resource "google_cloud_run_v2_service" "portal" {
           value_source {
             secret_key_ref {
               secret  = env.value
-              version = "latest"
+              version = var.azure_openai_key_version
             }
           }
         }
@@ -329,4 +329,9 @@ resource "google_secret_manager_secret_iam_member" "foundry" {
   secret_id = var.azure_openai_key_secret
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.app.email}"
+}
+
+variable "azure_openai_key_version" {
+  type    = string
+  default = "latest"
 }

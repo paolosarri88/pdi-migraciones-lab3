@@ -23,9 +23,10 @@ secret='pdi-foundry-key'
 base=[gcloud,'--project='+a.project,'secrets']
 exists=subprocess.run(base+['describe',secret],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode==0
 if not exists:subprocess.run(base+['create',secret,'--replication-policy=automatic'],check=True,stdout=subprocess.DEVNULL)
-subprocess.run(base+['versions','add',secret,'--data-file=-'],input=key.encode(),check=True,stdout=subprocess.DEVNULL)
+version_result=subprocess.run(base+['versions','add',secret,'--data-file=-','--format=json'],input=key.encode(),check=True,capture_output=True)
+version=json.loads(version_result.stdout)['name'].rsplit('/',1)[-1]
 del key
-config={'azure_openai_endpoint':endpoint,'azure_openai_deployment':a.deployment,'azure_openai_key_secret':secret,'auto_document_review':a.enable_auto}
-path=Path(__file__).resolve().parents[1]/'infra'/'foundry.auto.tfvars.json'
+config={'azure_openai_endpoint':endpoint,'azure_openai_deployment':a.deployment,'azure_openai_key_secret':secret,'azure_openai_key_version':version,'auto_document_review':a.enable_auto}
+path=Path(__file__).resolve().parents[1]/'infra'/'foundry-config.auto.tfvars.json'
 path.write_text(json.dumps(config));path.chmod(0o600)
 print('Conexión preparada. Ejecuta scripts/deploy.py --phase app para aplicar las referencias de secreto y permisos mínimos.')
