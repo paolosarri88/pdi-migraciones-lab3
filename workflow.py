@@ -44,7 +44,7 @@ def active_notices(uid):
 def install(context):
     ctx.update(context)
     c=ctx['connect'](ctx['DATA'],initialize=True)
-    columns={'requests':{'appointment_requested':'INTEGER DEFAULT 0'},'users':{'demo_run':'TEXT'},'documents':{'ai_review':'TEXT','requirement':'TEXT','review_status':"TEXT DEFAULT 'En revisión'",'review_note':'TEXT','reviewed_at':'TEXT','reviewed_by':'INTEGER','superseded':'INTEGER DEFAULT 0'},'events':{'kind':"TEXT DEFAULT 'status'"},'appointments':{'reminders':"TEXT DEFAULT '[]'",'reminder_phone':"TEXT DEFAULT ''"}}
+    columns={'visits':{'finished':'TEXT'},'requests':{'appointment_requested':'INTEGER DEFAULT 0'},'users':{'demo_run':'TEXT'},'documents':{'origin':"TEXT DEFAULT 'portal'",'origin_note':'TEXT','ai_review':'TEXT','requirement':'TEXT','review_status':"TEXT DEFAULT 'En revisión'",'review_note':'TEXT','reviewed_at':'TEXT','reviewed_by':'INTEGER','superseded':'INTEGER DEFAULT 0'},'events':{'kind':"TEXT DEFAULT 'status'"},'appointments':{'reminders':"TEXT DEFAULT '[]'",'reminder_phone':"TEXT DEFAULT ''"}}
     import os
     for table, additions in columns.items():
         if os.environ.get('DB_HOST'):
@@ -52,6 +52,8 @@ def install(context):
         else:present={r[1] for r in c.execute('PRAGMA table_info('+table+')').fetchall()}
         for name,definition in additions.items():
             if name not in present:c.execute('ALTER TABLE '+table+' ADD COLUMN '+name+' '+definition)
+    for old,new in ctx['REQUIREMENT_ALIASES'].items():
+        if old!=new:c.execute('UPDATE documents SET requirement=? WHERE requirement=?',(new,old))
     for uid, in c.execute('SELECT id FROM users WHERE demo_run IS NULL').fetchall():
         c.execute('UPDATE users SET demo_run=? WHERE id=?',(f'{uid:08}9',uid))
     for did,rid,typ,status in c.execute('SELECT d.id,r.id,r.type_id,r.status FROM documents d JOIN requests r ON r.id=d.request_id WHERE d.requirement IS NULL ORDER BY d.id').fetchall():
@@ -59,6 +61,7 @@ def install(context):
         used={r[0] for r in c.execute('SELECT requirement FROM documents WHERE request_id=? AND requirement IS NOT NULL',(rid,)).fetchall()}
         name=next((n for n in names if n not in used),'Otros antecedentes')
         c.execute('UPDATE documents SET requirement=?,review_status=? WHERE id=?',(name,'Aceptado' if status in FINAL else 'En revisión',did))
+    c.execute('CREATE UNIQUE INDEX IF NOT EXISTS users_demo_run_unique ON users(demo_run)')
     c.commit();c.close()
     app=ctx['app'];auth=ctx['auth'];db=ctx['db'];one=ctx['one'];fail=ctx['fail'];event=ctx['event'];now=ctx['now'];notify=ctx['notify']
 

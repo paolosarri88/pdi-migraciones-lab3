@@ -30,7 +30,7 @@ Abrir http://127.0.0.1:8080. En el computador de Paolo también está disponible
 | Funcionario | funcionario@demo.pdi.cl | Funcionario2026! |
 | Administrador | admin@demo.pdi.cl | Admin2026! |
 
-El inicio de sesión determina el portal. No hay un selector de roles. El tótem está separado en `/totem`: representa una pantalla de autoservicio del recinto, utilizada por el ciudadano para registrar llegada, consultar su turno y registrar salida. El funcionario atiende desde su agenda.
+Los accesos ciudadano y corporativo tienen formularios distintos; el servidor comprueba el rol correspondiente. No hay un selector de roles. El tótem está separado en `/totem`: representa una pantalla de autoservicio del recinto, utilizada por el ciudadano para registrar llegada, consultar su turno y registrar salida. El funcionario atiende desde su agenda.
 
 ## Recorrido para probar
 
@@ -53,7 +53,7 @@ En modo local: SQLite en `data/portal.sqlite3`, archivos en `data/files/` y clav
 
 La misma versión soporta ejecución local y despliegue GCP con Terraform. El código selecciona PostgreSQL cuando existe `DB_HOST` y almacenamiento privado cuando existe `DOCUMENT_BUCKET`. No se ha desplegado VPN, WAF ni conexión a sistemas institucionales reales. La simulación institucional vive en el mismo servidor de demostración, sin afirmar que constituye una red on-premise real.
 
-El módulo de asistencia del funcionario admite Azure OpenAI mediante variables `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY` y `AZURE_OPENAI_DEPLOYMENT`. Sin ellas, informa que no está configurado y no inventa una respuesta de IA. La asistencia del funcionario resume antecedentes escritos y nombres de archivos. Un adaptador separado permite prevalidación visual de archivos nuevos cuando se configura Azure y `AUTO_DOCUMENT_REVIEW=1`: puede aceptar u observar el archivo académico, o derivarlo a revisión manual. No resuelve solicitudes completas y el funcionario puede corregirlo. La llamada real y su calidad permanecen pendientes de comprobar con una sesión Azure válida. Nunca agregar claves a Git.
+El módulo de asistencia del funcionario admite Azure OpenAI mediante variables `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY` y `AZURE_OPENAI_DEPLOYMENT`. Sin ellas, informa que no está configurado y no inventa una respuesta de IA. La asistencia del funcionario resume antecedentes escritos y nombres de archivos. Un adaptador separado permite prevalidación visual de archivos nuevos cuando se configura Azure y `AUTO_DOCUMENT_REVIEW=1`: puede proponer aceptar u observar el archivo, o pedir ayuda al funcionario. Su recomendación se guarda por separado y no cambia el estado del documento. El funcionario confirma cada decisión y el resultado del expediente. La llamada real y su calidad permanecen pendientes de comprobar con una sesión Azure válida. Nunca agregar claves a Git.
 
 ## Catálogo y diseño
 
@@ -68,7 +68,7 @@ python3 -m unittest discover -s tests -v
 node --check static/app.js
 ```
 
-Quince pruebas de integración, ejecutables contra SQLite o una base PostgreSQL aislada con nombre `pdi_validation_*`, cubren autenticación y CSRF, aislamiento entre ciudadanos, documentos, reenvío de antecedentes, citas, llegada/atención/salida, administración y simuladores institucionales. Las pruebas usan una base temporal separada.
+Diecinueve pruebas de integración, ejecutables contra SQLite o una base PostgreSQL aislada con nombre `pdi_validation_*`, cubren autenticación y CSRF, aislamiento entre ciudadanos, documentos, reenvío de antecedentes, citas, llegada/atención/salida, administración y simuladores institucionales. Las pruebas usan una base temporal separada.
 
 ## Trabajo compartido
 
@@ -76,7 +76,7 @@ Quince pruebas de integración, ejecutables contra SQLite o una base PostgreSQL 
 
 ### Actualización de experiencia y documentos
 
-Ingreso con RUN ficticio `00.000.001-9` o correo de demostración (misma clave ciudadana). No se conecta con ClaveÚnica real. Búsqueda inmediata por trámite y folio, control temprano de duplicados, documentos separados por requisito, revisión individual con versiones e historial, avisos que dejan de pedir acciones completadas y validaciones en español. Las citas confirmadas permiten descargar un archivo `.ics` con varios recordatorios; el teléfono es una preferencia de prueba y no se envían SMS.
+Ingreso con RUN ficticio `00000001-9` o correo de demostración (misma clave ciudadana). No se conecta con ClaveÚnica real. Búsqueda inmediata por trámite y folio, control temprano de duplicados, documentos separados por requisito, revisión individual con versiones e historial, avisos que dejan de pedir acciones completadas y validaciones en español. Las citas confirmadas permiten descargar un archivo `.ics` con varios recordatorios; el teléfono es una preferencia de prueba y no se envían SMS.
 
 ## Guías para la entrega
 
@@ -89,3 +89,11 @@ Ingreso con RUN ficticio `00.000.001-9` o correo de demostración (misma clave c
 - [Conectar Foundry](docs/conectar-foundry.md).
 
 Los avisos accionables se reconstruyen desde documentos y citas pendientes, aunque se hayan leído. En Mis citas se puede solicitar coordinación de atención para un expediente activo sin cita; el funcionario agenda y luego el ciudadano confirma. Las ayudas desplegables explican cada requisito y ofrecen PDF ficticios de ejemplo.
+
+## Operación actualizada
+
+Consulta [el flujo de atención, accesos y simuladores](docs/flujo-atencion.md). Los documentos se muestran contraídos y permiten filtrar «Por revisar» o «Todos». La bandeja prioriza atenciones presenciales y muestra la siguiente acción del funcionario. La carga de archivos por funcionario requiere procedencia de correo explícita.
+
+El ciudadano puede crear una cuenta; se asigna un RUN sintético, sin puntos y con guion. Las identidades precargadas se pueden consultar desde el desplegable del ingreso. Los certificados de viajes y domicilio permiten solicitudes paralelas según la configuración académica.
+
+Las ventanas independientes están en `/simuladores/gepol`, `/simuladores/registro-civil` y `/totem`. Son rutas de un mismo despliegue, sin servidores nuevos ni conexión a sistemas institucionales reales. La interfaz de consulta abre ventanas con el RUN seleccionado. La cámara y la biometría quedan fuera del flujo definido.

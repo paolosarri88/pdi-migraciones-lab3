@@ -8,7 +8,7 @@ class WorkflowTests(unittest.TestCase):
     login=base.PortalTests.login
 
     def test_10_run_alias(self):
-        c,h=self.login('00.000.001-9','Ciudadano2026!')
+        c,h=self.login('00000001-9','Ciudadano2026!')
         self.assertEqual(c.get('/api/profile').json['user']['id'],1)
 
     def test_11_document_lifecycle_and_action_notices(self):
@@ -90,8 +90,8 @@ class WorkflowTests(unittest.TestCase):
     def test_16_document_examples_and_help(self):
         c=portal.app.test_client()
         help=c.get('/api/bootstrap').json['document_help']
-        self.assertIn('cuenta ficticia',help['Antecedente de domicilio de prueba']['description'])
-        self.assertNotEqual(help['Antecedente de domicilio de prueba']['key'],help['Antecedente de residencia de prueba']['key'])
+        self.assertIn('cuenta ficticia',help['Antecedente de domicilio']['description'])
+        self.assertNotEqual(help['Antecedente de domicilio']['key'],help['Antecedente de residencia']['key'])
         self.assertEqual(c.get('/api/document-examples/identidad').mimetype,'application/pdf')
         self.assertEqual(c.get('/api/document-examples/no-existe').status_code,404)
 
@@ -123,12 +123,75 @@ class WorkflowTests(unittest.TestCase):
             upload=c.post(f'/api/requests/{rid}/documents',json=payload,headers=h)
         self.assertEqual(upload.status_code,201)
         detail=c.get(f'/api/requests/{rid}').json
-        self.assertEqual(detail['documents'][0]['review_status'],'Rechazado')
-        self.assertIn('academico-v1',detail['documents'][0]['ai_review'])
-        self.assertTrue(any(e['status']=='Documento observado por IA' for e in detail['events']))
+        self.assertEqual(detail['documents'][0]['review_status'],'En revisión')
+        staff,hs=self.login('funcionario@demo.pdi.cl','Funcionario2026!')
+        internal=staff.get(f'/api/requests/{rid}').json
+        self.assertIn('academico-v1',internal['documents'][0]['ai_review'])
+        self.assertTrue(any(e['status']=='IA propone observar' for e in internal['events']))
+        self.assertFalse(any(e['status']=='IA propone observar' for e in detail['events']))
+        self.assertEqual(staff.patch(f"/api/documents/{upload.json['id']}/review",json={'status':'Rechazado','note':'El archivo no corresponde a un documento de viaje.'},headers=hs).status_code,200)
         with patch.dict(os.environ,config),patch.object(portal,'inspect_document',side_effect=TimeoutError):
             replacement=c.post(f'/api/requests/{rid}/documents',json=payload,headers=h)
         self.assertEqual(replacement.status_code,201)
         detail=c.get(f'/api/requests/{rid}').json
         self.assertEqual(detail['documents'][0]['review_status'],'En revisión')
-        self.assertIn('Control de disponibilidad',detail['documents'][0]['ai_review'])
+        self.assertIn('Control de disponibilidad',staff.get(f'/api/requests/{rid}').json['documents'][0]['ai_review'])
+
+    def test_19_registration_access_and_run_format(self):
+        c=portal.app.test_client();csrf=c.get('/api/bootstrap').json['csrf'];h={'X-CSRF-Token':csrf}
+        created=c.post('/api/register',json={'name':'Persona Nueva','email':'nueva@example.test','password':'MiClaveNueva2026!','role':'admin'},headers=h)
+        self.assertEqual(created.status_code,201);run=created.json['run']
+        self.assertRegex(run,r'^\d{8}-[0-9K]$')
+        for invalid in ('000000019','00.000.001-9'):
+            self.assertEqual(c.post('/api/login',json={'email':invalid,'password':'Ciudadano2026!'},headers=h).status_code,400)
+        self.assertEqual(c.post('/api/login',json={'email':run,'password':'MiClaveNueva2026!','access':'staff'},headers=h).status_code,400)
+        good=c.post('/api/login',json={'email':run,'password':'MiClaveNueva2026!','access':'citizen'},headers=h)
+        self.assertEqual(good.status_code,200);self.assertEqual(good.json['user']['role'],'citizen')
+        self.assertEqual(c.get('/api/workboard').status_code,403)
+        names=portal.app.test_client().get('/api/demo-accounts').json['items']
+        self.assertFalse(any(a['email']=='nueva@example.test' for a in names))
+
+    def test_20_repeatable_certificates_and_work_priorities(self):
+        c,h=self.login()
+        payload={'type_id':'viajes','description':'Certificado de otro período solicitado por la persona.'}
+        self.assertEqual(c.post('/api/requests',json=payload,headers=h).status_code,201)
+        self.assertEqual(c.post('/api/requests',json=payload,headers=h).status_code,201)
+        staff,hs=self.login('funcionario@demo.pdi.cl','Funcionario2026!')
+        board=staff.get('/api/workboard').json
+        if board['queue']:self.assertEqual(board['queue'][0]['status'],'En atención')
+        self.assertTrue(any(t['action'].startswith('Revisar') for t in board['tasks']))
+        with portal.app.app_context():
+            portal.db().execute("UPDATE requests SET type_id='orientacion',status='Cita programada' WHERE id=3")
+            portal.db().execute("UPDATE documents SET review_status='Aceptado' WHERE request_id=3")
+            portal.db().execute("UPDATE appointments SET status='Cancelada' WHERE request_id=3")
+            portal.db().commit()
+        updated=staff.get('/api/workboard').json
+        self.assertEqual(next(t['action'] for t in updated['tasks'] if t['id']==3),'Resolver expediente')
+
+    def test_21_institutional_windows_and_permissions(self):
+        citizen,h=self.login();staff,hs=self.login('funcionario@demo.pdi.cl','Funcionario2026!')
+        self.assertEqual(citizen.get('/api/institutional/people').status_code,403)
+        self.assertEqual(citizen.post('/api/simulators/gepol/query',json={'run':'00000001-9'},headers=h).status_code,403)
+        people=staff.get('/api/institutional/people').json['items']
+        self.assertTrue(any(p['run']=='00000001-9' for p in people))
+        geop=staff.post('/api/simulators/gepol/query',json={'run':'00000001-9'},headers=hs)
+        civil=staff.post('/api/simulators/registro-civil/query',json={'name':'María Fernanda'},headers=hs)
+        self.assertEqual(geop.status_code,200);self.assertEqual(civil.status_code,200)
+        self.assertIn('migration_status',geop.json['items'][0]);self.assertNotIn('migration_status',civil.json['items'][0])
+        self.assertEqual(staff.post('/api/simulators/gepol/query',json={'run':'00.000.001-9'},headers=hs).status_code,400)
+        self.assertEqual(staff.post('/api/simulators/desconocido/query',json={'run':'00000001-9'},headers=hs).status_code,404)
+        self.assertEqual(staff.get('/simuladores/gepol').status_code,200)
+        self.assertEqual(staff.get('/simuladores/registro-civil').status_code,200)
+        self.assertIn(b'kiosk.js',staff.get('/totem').data)
+
+    def test_22_staff_upload_requires_explicit_provenance(self):
+        staff,h=self.login('funcionario@demo.pdi.cl','Funcionario2026!')
+        raw=base64.b64encode(portal.simple_pdf('ARCHIVO',['Contenido ficticio.'])).decode()
+        payload={'name':'correo.pdf','content':raw,'requirement':'Otros antecedentes'}
+        self.assertEqual(staff.post('/api/requests/1/documents',json=payload,headers=h).status_code,400)
+        payload.update(origin='email',origin_note='Recibido en el correo institucional del expediente.')
+        result=staff.post('/api/requests/1/documents',json=payload,headers=h)
+        self.assertEqual(result.status_code,201)
+        docs=staff.get('/api/requests/1').json['documents']
+        current=next(d for d in docs if d['id']==result.json['id'])
+        self.assertEqual(current['origin'],'email');self.assertIn('correo institucional',current['origin_note'])

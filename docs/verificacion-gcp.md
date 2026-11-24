@@ -48,3 +48,16 @@ Actualización del 23 de noviembre de 2026, revisión `pdi-portal-00005-b9d`, im
 - Diagnóstico Azure: la sesión UAI se renovó correctamente; el directorio universitario no devolvió suscripciones accesibles. La identidad Bytequest guardada tenía token vencido y el usuario informó que el inicio de sesión no reconocía la cuenta. Es necesario confirmar la cuenta/suscripción vigente del laboratorio. La inferencia real y evaluación de calidad permanecen pendientes.
 
 Las guías de uso, criterios, arquitectura, matriz de pruebas y pendientes se incluyen en `docs/`. La automatización de documentos está preparada pero desactivada, con revisión manual disponible.
+
+## Revisión v4: decisión humana, bandeja operativa y simuladores
+
+Publicación final: revisión `pdi-portal-00008-6g8`, imagen `portal:20261124014241` (identificador de compilación en UTC).
+
+- Diecinueve pruebas aprobadas con SQLite temporal. Diecinueve aprobadas con PostgreSQL temporal aislado (359,552 segundos). El último ajuste de la acción «Resolver expediente» después de una cita se verificó además en la prueba local de prioridades.
+- La propuesta IA ya no modifica el estado documental ni la solicitud; se conserva separada, con eventos internos. El ciudadano no recibe el contenido interno del análisis. El funcionario decide cada documento y el resultado final.
+- Se verificaron registro de ciudadanos sin elevación de rol, RUN sin puntos/con guion, formularios de acceso por rol, tipos de certificado con concurrencia, bandeja de prioridades, permisos de consultas institucionales y procedencia obligatoria de archivos incorporados por funcionario desde correo.
+- La finalización de atención y la salida del recinto se registran por separado. El tótem impide repetir llegada/salida y requiere atención finalizada para la salida.
+- Comprobación HTTPS del despliegue: ingreso corporativo y ciudadano, acceso restringido a la bandeja, listados con RUN, consultas de GEPOL y Registro Civil, contenido separado por sistema y disponibilidad de las tres páginas independientes. Las consultas de comprobación dejan registros de auditoría, sin modificar expedientes.
+- Sintaxis JavaScript y compilación Python verificadas. La revisión visual automática NO pudo completarse: el navegador dejó de responder y su sesión de control expiró. No se presenta una captura anterior como evidencia visual de esta versión.
+
+Rutas publicadas: `/totem`, `/simuladores/gepol` y `/simuladores/registro-civil`. Usan el mismo servicio y datos del laboratorio, con diseños independientes y avisos de simulación. No se conectan a sistemas reales ni leen correos automáticamente. La biometría permanece fuera del flujo definido; la IA real sigue pendiente del acceso Azure descrito previamente.

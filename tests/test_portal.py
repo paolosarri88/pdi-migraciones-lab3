@@ -71,6 +71,7 @@ class PortalTests(unittest.TestCase):
         staff,hs=self.login('funcionario@demo.pdi.cl','Funcionario2026!')
         self.assertEqual(staff.patch('/api/appointments/2',json={'action':'start'},headers=hs).status_code,200)
         self.assertEqual(staff.patch('/api/appointments/2',json={'action':'finish'},headers=hs).status_code,200)
+        self.assertEqual(c.post('/api/kiosk',json={'code':'CITA-1002','action':'exit'},headers=h).status_code,200)
         self.assertEqual(c.post('/api/kiosk',json={'code':'CITA-1002','action':'exit'},headers=h).status_code,409)
 
     def test_06_admin_and_institutional(self):

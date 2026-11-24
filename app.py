@@ -5,6 +5,7 @@ import hashlib
 import io
 import json
 import os
+import re
 import secrets
 import sqlite3
 import time
@@ -44,6 +45,15 @@ CATALOG = [
  {'id':'entrevista','name':'Coordinación de entrevista presencial','group':'Atención migratoria','description':'Caso académico para coordinar la entrega y revisión de antecedentes que requieran atención presencial.','docs':['Documento de identidad de prueba'],'fields':['Motivo de atención','Disponibilidad horaria'],'source':None},
  {'id':'orientacion','name':'Orientación migratoria','group':'Atención migratoria','description':'Solicitud de orientación y derivación dentro de la demostración.','docs':[],'fields':['Tema de la consulta'],'source':None},
 ]
+# Display labels are canonical; retain aliases to migrate existing document slots.
+REQUIREMENT_ALIASES={name:name.replace(' de prueba','') for c in CATALOG for name in c['docs']}
+for c in CATALOG:
+    c['docs']=[REQUIREMENT_ALIASES[n] for n in c['docs']]
+    c['name']=c['name'].replace(' · ',' - ')
+    c['allow_multiple_active']=c['id'] in ('viajes','domicilio')
+DESCRIPTIONS={'vigencia-rm':'Consulta de vigencia de residencia definitiva en la Región Metropolitana.','vigencia-regiones':'Consulta de vigencia de residencia definitiva en regiones.','duplicado-visa':'Obtén una copia de un registro anterior.','tarjeta-turismo':'Presenta los antecedentes para recuperar un registro de turismo.','perdida':'Informa la pérdida de un documento de identidad extranjero.','domicilio':'Presenta antecedentes de residencia y domicilio.','registro-ingreso':'Solicita revisión de un ingreso no encontrado o incompleto.','antecedentes':'Presenta antecedentes adicionales para una revisión.','entrevista':'Solicita coordinación de una entrevista presencial.','orientacion':'Consulta y recibe orientación sobre tu situación migratoria.'}
+for c in CATALOG:c['description']=DESCRIPTIONS.get(c['id'],c['description'])
+
 EXTERNAL = [
  {'name':'Salvoconducto','description':'Revisa el procedimiento y las condiciones en el portal oficial.','url':'https://www.pdichile.cl/tr%C3%A1mites-online/salvoconducto'},
  {'name':'AutoSeguro','description':'Servicio institucional externo al alcance migratorio del prototipo.','url':'https://www.autoseguro.gob.cl'},
@@ -62,7 +72,7 @@ def rows(sql,args=()): return [dict(r) for r in db().execute(sql,args).fetchall(
 def one(sql,args=()):
     r=db().execute(sql,args).fetchone(); return dict(r) if r else None
 def fail(message, code=400): return jsonify(error=message),code
-def actor(): return one('SELECT id,name,email,role,document,nationality,phone,address FROM users WHERE id=? AND active=1',(session.get('uid',-1),))
+def actor(): return one('SELECT id,name,email,role,document,demo_run,nationality,phone,address FROM users WHERE id=? AND active=1',(session.get('uid',-1),))
 def auth(staff=False,admin=False):
     def deco(fn):
         @wraps(fn)
@@ -75,7 +85,7 @@ def auth(staff=False,admin=False):
         return wrap
     return deco
 def request_record(rid):
-    r=one('SELECT r.*,u.name as owner_name,u.document,u.email FROM requests r JOIN users u ON u.id=r.user_id WHERE r.id=?',(rid,))
+    r=one('SELECT r.*,u.name as owner_name,u.document,u.demo_run,u.email FROM requests r JOIN users u ON u.id=r.user_id WHERE r.id=?',(rid,))
     if r and (g.user['role'] in ('staff','admin') or r['user_id']==g.user['id']):return r
     return None
 def event(rid,status,note,visibility='public'):
@@ -180,9 +190,13 @@ def login():
     data=request.get_json(silent=True) or {};email=str(data.get('email','')).strip().lower();ip=request.remote_addr
     attempts[ip]=[t for t in attempts.get(ip,[]) if time.time()-t<60]
     if len(attempts[ip])>=12:return fail('Demasiados intentos. Espera un minuto.',429)
+    access=data.get('access')
+    if '@' not in email and not re.fullmatch(r'\d{7,8}-[0-9kK]',email):return fail('Formato de RUN: 12345678-9, sin puntos y con guion.',400)
+    if access=='staff' and '@' not in email:return fail('Ingresa tu correo corporativo.',400)
     identifier=''.join(ch for ch in email.upper() if ch.isalnum())
     u=one('SELECT * FROM users WHERE (email=? OR demo_run=?) AND active=1',(email,identifier))
     if not u or not check_password_hash(u['password'],str(data.get('password',''))):attempts[ip].append(time.time());return fail('RUN/correo o clave de demostración incorrectos.',401)
+    if access=='staff' and u['role']=='citizen' or access=='citizen' and u['role']!='citizen':return fail('Esta cuenta debe ingresar desde el acceso correspondiente.',403)
     session.clear();session['uid']=u['id'];session['csrf']=secrets.token_urlsafe(32);session.permanent=True
     return jsonify(user=actor(),csrf=session['csrf'])
 
@@ -208,7 +222,7 @@ def create_request():
     if typ not in {t['id'] for t in CATALOG} or len(desc)<15 or len(desc)>5000:return fail('Selecciona un trámite y describe tu solicitud (15 a 5.000 caracteres).')
     if g.user['role']!='citizen':return fail('Las solicitudes ciudadanas se ingresan con una cuenta de ciudadano.',403)
     duplicate=one("SELECT id,folio FROM requests WHERE user_id=? AND type_id=? AND status NOT IN ('Resuelta','Cerrada','Rechazada')",(g.user['id'],typ))
-    if duplicate:return fail(f"Ya tienes una solicitud activa de este tipo: {duplicate['folio']}. Revisa su detalle antes de ingresar otra.",409)
+    if duplicate and not next(c for c in CATALOG if c['id']==typ)['allow_multiple_active']:return fail(f"Ya tienes una solicitud activa de este tipo: {duplicate['folio']}. Revisa su detalle antes de ingresar otra.",409)
     cur=db().execute('INSERT INTO requests(user_id,type_id,status,description,details,created,updated) VALUES(?,?,?,?,?,?,?)',(g.user['id'],typ,'Recibida',desc,dumps(d.get('details',{})),now(),now()));rid=cur.lastrowid
     folio=f'SOL-{datetime.now().year}-{rid:04}';db().execute('UPDATE requests SET folio=? WHERE id=?',(folio,rid));event(rid,'Recibida','Solicitud recibida. Puedes seguir su estado desde este portal.')
     notify(g.user['id'],'Solicitud recibida',f'Tu folio es {folio}.',f'/solicitudes/{rid}')
@@ -222,7 +236,9 @@ def detail(rid):
     r['details']=json.loads(r['details'] or '{}');r['ai']=json.loads(r['ai']) if r['ai'] else None
     events=rows('SELECT * FROM events WHERE request_id=?'+(" AND visibility='public'" if g.user['role']=='citizen' else '')+' ORDER BY id DESC',(rid,))
     docs=rows('SELECT * FROM documents WHERE request_id=? ORDER BY id DESC',(rid,))
-    if g.user['role']=='citizen':r['ai']=None
+    if g.user['role']=='citizen':
+        r['ai']=None
+        for d in docs:d['ai_review']=None
     r.update(document_overview(r,docs))
     return jsonify(request=r,events=events,documents=docs,requirements=document_groups(r,docs),appointments=rows('SELECT * FROM appointments WHERE request_id=? ORDER BY date DESC',(rid,)))
 
@@ -259,6 +275,11 @@ def upload(rid):
     else:return fail('Solo se admiten PDF, PNG o JPG válidos.')
     if len(rows('SELECT id FROM documents WHERE request_id=?',(rid,)))>=12:return fail('El expediente admite hasta 12 documentos.')
     requirement=str(d.get('requirement','')).strip()
+    requirement=REQUIREMENT_ALIASES.get(requirement,requirement)
+    origin=str(d.get('origin','portal'))
+    origin_note=str(d.get('origin_note','')).strip()[:500]
+    if g.user['role']!='citizen' and (origin!='email' or len(origin_note)<10):return fail('Usa la incorporación por correo e indica su procedencia (al menos 10 caracteres).')
+    if g.user['role']=='citizen':origin='portal';origin_note=''
     groups=document_groups(r)
     allowed=[x['name'] for x in groups]
     if not requirement:requirement=next((x['name'] for x in groups if x['status']=='Falta documento'),next((x['name'] for x in groups if x['status']=='Rechazado'),'Otros antecedentes'))
@@ -267,22 +288,16 @@ def upload(rid):
     if current and current['review_status']=='Aceptado' and g.user['role']=='citizen':return fail('Este antecedente ya está aceptado; no requiere reemplazo.',409)
     path=secrets.token_hex(20)+ext;put_document(DATA,path,raw,mime)
     db().execute('UPDATE documents SET superseded=1 WHERE request_id=? AND requirement=? AND superseded=0',(rid,requirement))
-    cur=db().execute('INSERT INTO documents(request_id,name,path,mime,size,created,requirement) VALUES(?,?,?,?,?,?,?)',(rid,name,path,mime,len(raw),now(),requirement))
+    cur=db().execute('INSERT INTO documents(request_id,name,path,mime,size,created,requirement,origin,origin_note) VALUES(?,?,?,?,?,?,?,?,?)',(rid,name,path,mime,len(raw),now(),requirement,origin,origin_note))
     event(rid,r['status'],f'Antecedente incorporado: {name}.')
     if document_ai_enabled():
         try:result=inspect_document(raw,mime,requirement)
         except Exception:result={'decision':'manual','reason':'No se pudo completar la lectura automática. El funcionario revisará el archivo.','source':'Control de disponibilidad','rules_version':'academico-v1'}
         if result:
             result['created']=now()
-            status={'aceptar':'Aceptado','observar':'Rechazado','manual':'En revisión'}[result['decision']]
-            note=('Prevalidación automática de prueba: ' if result['source']=='Microsoft Foundry' else '')+result['reason']
-            db().execute('UPDATE documents SET ai_review=?,review_status=?,review_note=?,reviewed_at=? WHERE id=?',(dumps(result),status,note,now(),cur.lastrowid))
-            title={'aceptar':'Documento aceptado por IA','observar':'Documento observado por IA','manual':'Documento pendiente de revisión manual'}[result['decision']]
-            event(rid,title,requirement+': '+note)
-            kind='document-rejected' if status=='Rechazado' else 'document-accepted' if status=='Aceptado' else 'document-review'
-            db().execute('UPDATE events SET kind=? WHERE id=(SELECT MAX(id) FROM events WHERE request_id=?)',(kind,rid))
-            if status=='Rechazado':db().execute("UPDATE requests SET status='Requiere antecedentes' WHERE id=?",(rid,))
-            notify(r['user_id'],title,r['folio']+': '+note,f'/solicitudes/{rid}')
+            db().execute('UPDATE documents SET ai_review=? WHERE id=?',(dumps(result),cur.lastrowid))
+            title={'aceptar':'IA propone aceptar','observar':'IA propone observar','manual':'IA solicita revisión del funcionario'}[result['decision']]
+            event(rid,title,requirement+': '+result['reason'],'internal')
     db().execute('UPDATE requests SET updated=? WHERE id=?',(now(),rid))
     return jsonify(id=cur.lastrowid),201
 
@@ -349,7 +364,7 @@ def appointment_action(aid):
     elif action=='start' and g.user['role'] in ('staff','admin') and a['status']=='Presente':
         status='En atención';db().execute('UPDATE visits SET started=? WHERE appointment_id=?',(now(),aid))
     elif action=='finish' and g.user['role'] in ('staff','admin') and a['status']=='En atención':
-        status='Finalizada';db().execute('UPDATE visits SET exited=? WHERE appointment_id=?',(now(),aid))
+        status='Finalizada';db().execute('UPDATE visits SET finished=? WHERE appointment_id=?',(now(),aid))
     else:return fail('La acción no está disponible para el estado actual.',409)
     db().execute('UPDATE appointments SET status=? WHERE id=?',(status,aid));event(a['request_id'],one('SELECT status FROM requests WHERE id=?',(a['request_id'],))['status'],f'Cita: {status}.')
     return jsonify(ok=True)
@@ -367,6 +382,7 @@ def kiosk():
         a['status']='Presente';v={'ticket':ticket,'entered':now(),'exited':None}
     elif action=='exit':
         if not v or v.get('exited'):return fail('No hay una visita abierta para este código.',409)
+        if a['status']!='Finalizada':return fail('Tu atención todavía no ha finalizado. Consulta al funcionario antes de registrar la salida.',409)
         db().execute('UPDATE visits SET exited=? WHERE appointment_id=?',(now(),a['id']));db().execute("UPDATE appointments SET status='Finalizada' WHERE id=?",(a['id'],));a['status']='Finalizada';v['exited']=now()
     elif action!='lookup':return fail('Acción inválida.')
     return jsonify(appointment={k:a[k] for k in ('date','time','office','status','owner_name')},visit=v)
@@ -447,4 +463,6 @@ def frontend(path=''):
 init()
 from workflow import install, document_groups, document_overview, active_notices
 install(globals())
+from portal_v4 import install as install_v4
+install_v4(globals())
 if __name__=='__main__':app.run(host=os.environ.get('HOST','127.0.0.1'),port=int(os.environ.get('PORT','8080')),debug=False)

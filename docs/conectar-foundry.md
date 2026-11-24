@@ -22,7 +22,7 @@ El primer script verifica el despliegue, obtiene la clave en memoria y la envía
 - `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY` y `AZURE_OPENAI_DEPLOYMENT` habilitan la asistencia del funcionario.
 - `AUTO_DOCUMENT_REVIEW=1` activa además la lectura visual de cada archivo nuevo. El aviso del cargador informa su envío a Azure. Los archivos existentes no se procesan retroactivamente.
 - Los documentos de hasta tres páginas se convierten en imágenes para la prevalidación. Los protegidos, extensos o ambiguos pasan a revisión manual. Un fallo del servicio conserva el archivo y la posibilidad de revisión.
-- El resultado se limita a la admisibilidad académica del archivo, registra su origen y permite corrección por el funcionario. Nunca resuelve el trámite completo.
+- El resultado es una recomendación de admisibilidad del archivo: registra su origen y requiere decisión del funcionario. No cambia el estado documental ni resuelve el trámite completo.
 - Para desactivar la automatización, cambiar `auto_document_review` a `false` en la configuración local y aplicar de nuevo el despliegue. Para retirar toda la integración, vaciar las tres variables `azure_openai_*` y revisar el plan de Terraform.
 
 ## Evidencia pendiente
