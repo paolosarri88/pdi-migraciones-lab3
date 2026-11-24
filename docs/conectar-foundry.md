@@ -35,7 +35,7 @@ Referencias: [crear despliegues con CLI/Bicep](https://learn.microsoft.com/en-us
 
 Las referencias públicas del despliegue se conservan en `infra/foundry-config.auto.tfvars.json`: endpoint de Foundry, despliegue `gpt-4.1-mini`, secreto `pdi-foundry-key` y versión `1`. La clave permanece exclusivamente en Secret Manager. La revisión documental automática está activada para archivos nuevos desde los criterios v2. No crear otra configuración local con valores contradictorios sin revisar el plan.
 
-En el expediente del funcionario, el panel **Asistencia de revisión** permite pulsar **Analizar antecedentes**. Este endpoint lee el contenido de hasta tres archivos actuales por ejecución y guarda las recomendaciones por documento. No cambia decisiones documentales ni el estado del expediente. Utiliza los mismos criterios que la prevalidación al subir archivos nuevos.
+En el expediente del funcionario, cada documento permite pulsar **Generar sugerencia con IA**. Este endpoint lee únicamente ese archivo y guarda su recomendación en él. No cambia decisiones documentales ni el estado del expediente. Utiliza los mismos criterios que la prevalidación al subir archivos nuevos.
 
 ### Verificación del 24 de noviembre de 2026
 

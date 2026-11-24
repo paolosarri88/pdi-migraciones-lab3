@@ -10,3 +10,9 @@ const events=vm.runInContext(`timelineHtml({request:{status:'En revisión'},even
 console.log('Interfaz: scripts inicializados juntos; contadores, color de cierre, folios enlazados e historial seguro comprobados.');
 
 vm.runInContext('render=()=>{globalThis.latestRouterCalled=true;}',context);listeners.popstate();assert.equal(vm.runInContext('latestRouterCalled',context),true);
+
+const card=vm.runInContext(`documentCard({name:'Documento de identidad',status:'En revisión',document:{id:75,name:'identidad.pdf',size:1024,created:'2026-11-24',review_status:'En revisión',ai_review:JSON.stringify({decision:'observar',reason:'Titular diferente',source:'Microsoft Foundry',checks:[]})}},true,42,false)`,context);
+assert(card.includes('IA sugiere: rechazarlo'));assert(card.includes('Generar sugerencia con IA'));assert(card.includes('data-document="75"'));assert(!card.includes('Usar documento existente'));
+const missing=vm.runInContext(`documentCard({name:'Antecedente de domicilio',status:'Falta documento',document:null},true,42,false)`,context);assert(missing.includes('Notificar al ciudadano'));assert(!missing.includes('Usar documento existente'));
+const citizenCard=vm.runInContext(`documentCard({name:'Documento de identidad',status:'Falta documento',document:null},false,42,false)`,context);assert(!citizenCard.includes('Notificar al ciudadano'));assert(!citizenCard.includes('Generar sugerencia con IA'));
+assert(!fs.readFileSync('static/app.js','utf8').includes("panel('Asistencia de revisión'"));

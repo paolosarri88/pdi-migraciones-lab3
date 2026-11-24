@@ -57,3 +57,9 @@ Se ingresó como Niko Bellic y se subieron archivos al portal, procesados por `g
 | CV simulado con nombre y RUN de Niko | SOL-2026-0043 | Propone observar por tipo incorrecto y campos ausentes |
 
 Los cuatro documentos conservaron `review_status=En revisión`. No se aceptó ni rechazó automáticamente el documento o expediente. El caso correcto se verificó también con el endpoint del botón de análisis, leyendo el archivo ya guardado. En la primera ejecución se detectó que OCR añadió un cero inicial al RUN y se corrigió la comparación de formato; la repetición pasó. Pasaron 37 pruebas Python y la comprobación conjunta del frontend. Estas cuatro pruebas no sustituyen la evaluación completa pendiente de los otros tipos documentales. El CV personal no se incluye en este repositorio.
+
+## Revisión individual v3
+
+La sugerencia se muestra exclusivamente en el documento del lado izquierdo: **IA sugiere: aceptarlo / rechazarlo / revisarlo**, con explicación y evidencia por campo. El botón **Generar sugerencia con IA** llama a `/api/documents/<id>/ai` y solo actualiza la propuesta de ese archivo. No existe panel duplicado de IA en la columna derecha. Archivos legibles y claramente ajenos o con campos ausentes proponen rechazo; incertidumbre o fallos siguen proponiendo revisión. El funcionario conserva siempre la decisión.
+
+La reutilización entre solicitudes está deshabilitada (HTTP 410). Debe presentarse una copia nueva en cada expediente, aunque se conserve la biblioteca de documentos históricos para consulta.

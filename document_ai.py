@@ -7,7 +7,7 @@ import urllib.request
 from urllib.parse import quote, urlparse
 from document_rules import DOCUMENT_RULES, rule_key
 
-RULE_VERSION='academico-v2'
+RULE_VERSION='academico-v3'
 
 def configured():
     return all(os.environ.get(k) for k in ('AZURE_OPENAI_ENDPOINT','AZURE_OPENAI_API_KEY','AZURE_OPENAI_DEPLOYMENT'))
@@ -33,6 +33,8 @@ def normalize_result(result, rule, profile=None, today=None):
     # A confidence threshold alone never authorizes acceptance.
     if confidence<0.9 or (decision=='aceptar' and not (all_present and type_matches and legible)) or not legible:
         decision='manual'
+    explicitly_missing=any(valid_checks.get(f,{}).get('present') is False for f in rule['fields'])
+    if confidence>=0.9 and legible and (not type_matches or explicitly_missing):decision='observar'
     # La coincidencia de perfil y la vigencia se comprueban también en el servidor.
     comparisons=[]
     if profile:
@@ -49,8 +51,8 @@ def normalize_result(result, rule, profile=None, today=None):
         if any('Nombre' in f for f in rule['fields']):
             match=bool(found_name and name_tokens(found_name)==name_tokens(expected_name))
             comparisons.append({'field':'Titular coincide con el perfil','present':match,'evidence':'Coincide' if match else 'Titular diferente' if found_name else 'No se pudo extraer el titular'})
-            if not found_name:decision='manual'
-            elif not match:decision='observar';result['reason']='El nombre del titular del documento no coincide con el perfil del ciudadano.'
+            if not found_name and decision=='aceptar':decision='manual'
+            elif found_name and not match:decision='observar';result['reason']='El nombre del titular del documento no coincide con el perfil del ciudadano.'
         found_run=extracted.get('personal_id')
         if found_run and profile.get('demo_run'):
             match=normalized(found_run).lstrip('0')==normalized(profile['demo_run']).lstrip('0')
@@ -68,8 +70,8 @@ def normalize_result(result, rule, profile=None, today=None):
         expected_folio=profile.get('folio')
         if 'Folio relacionado' in rule['fields'] and expected_folio:
             found=extracted.get('folio')
-            if not found:decision='manual'
-            elif normalized(found)!=normalized(expected_folio):decision='observar';result['reason']='El folio del antecedente no corresponde a esta solicitud.'
+            if not found and decision=='aceptar':decision='manual'
+            elif found and normalized(found)!=normalized(expected_folio):decision='observar';result['reason']='El folio del antecedente no corresponde a esta solicitud.'
         # La confianza o lectura insuficiente siempre requieren criterio humano.
         if confidence<0.9 or not legible:decision='manual'
     checks=checks+comparisons

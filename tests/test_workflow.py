@@ -225,21 +225,16 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(staff.patch(f'/api/appointments/{arrival.json["id"]}',json={'action':'start'},headers=h).status_code,200)
         self.assertEqual(staff.patch(f'/api/appointments/{arrival.json["id"]}',json={'action':'finish'},headers=h).status_code,200)
 
-    def test_24_document_reuse_is_owned_versioned_and_pending(self):
-        staff,h=self.login('funcionario@demo.pdi.cl','Funcionario2026!');citizen,hc=self.login()
-        def case():return citizen.post('/api/requests',json={'type_id':'domicilio','description':'Nueva solicitud para probar referencias documentales.'},headers=hc).json['id']
+    def test_24_each_case_requires_its_own_upload(self):
+        citizen,hc=self.login();staff,hs=self.login('funcionario@demo.pdi.cl','Funcionario2026!')
+        def case():return citizen.post('/api/requests',json={'type_id':'domicilio','description':'Nueva solicitud con copia documental independiente.'},headers=hc).json['id']
         rid=case();target=case();name=citizen.get(f'/api/requests/{rid}').json['requirements'][0]['name']
         raw=base64.b64encode(portal.simple_pdf('DOCUMENTO',['Contenido ficticio para la prueba.'])).decode()
-        upload=staff.post(f'/api/requests/{rid}/documents',json={'name':'copia.pdf','content':raw,'requirement':name,'origin':'presencial','origin_note':'Copia presentada y revisada durante la atención presencial.'},headers=h)
-        self.assertEqual(upload.status_code,201);did=upload.json['id']
-        self.assertEqual(citizen.post(f'/api/requests/{target}/reuse-document',json={'document_id':did,'requirement':name},headers=hc).status_code,409)
-        self.assertEqual(staff.patch(f'/api/documents/{did}/review',json={'status':'Aceptado'},headers=h).status_code,200)
-        reuse=citizen.post(f'/api/requests/{target}/reuse-document',json={'document_id':did,'requirement':name},headers=hc)
-        self.assertEqual(reuse.status_code,201)
-        copied=next(d for d in citizen.get(f'/api/requests/{target}').json['documents'] if d['id']==reuse.json['id'])
-        self.assertEqual(copied['source_document_id'],did);self.assertEqual(copied['review_status'],'En revisión');self.assertIsNone(copied['reviewed_by'])
-        other,ho=self.login('persona4@demo.pdi.cl','Ciudadano2026!')
-        self.assertEqual(other.get('/api/people/1/documents').status_code,403)
-        self.assertEqual(staff.patch(f'/api/documents/{did}/validity',json={'valid_until':'2020-01-01','reason':'Fecha de vencimiento informada en el documento.'},headers=h).status_code,200)
-        newer=case()
-        self.assertEqual(citizen.post(f'/api/requests/{newer}/reuse-document',json={'document_id':did,'requirement':name},headers=hc).status_code,409)
+        payload={'name':'copia.pdf','content':raw,'requirement':name}
+        upload=citizen.post(f'/api/requests/{rid}/documents',json=payload,headers=hc);self.assertEqual(upload.status_code,201)
+        did=upload.json['id'];self.assertEqual(staff.patch(f'/api/documents/{did}/review',json={'status':'Aceptado'},headers=hs).status_code,200)
+        self.assertEqual(citizen.post(f'/api/requests/{target}/reuse-document',json={'document_id':did,'requirement':name},headers=hc).status_code,410)
+        self.assertEqual(citizen.get(f'/api/requests/{target}').json['documents'],[])
+        fresh=citizen.post(f'/api/requests/{target}/documents',json=payload,headers=hc);self.assertEqual(fresh.status_code,201)
+        copied=citizen.get(f'/api/requests/{target}').json['documents'][0]
+        self.assertIsNone(copied['source_document_id']);self.assertEqual(copied['review_status'],'En revisión')

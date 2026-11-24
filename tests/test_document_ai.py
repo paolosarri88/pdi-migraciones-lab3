@@ -36,3 +36,8 @@ class DocumentReviewTests(unittest.TestCase):
         self.assertEqual(rule_key('Antecedente del viaje, si corresponde'),'viaje')
         self.assertEqual(rule_key('Identificación o antecedente alternativo'),'alternativo')
         self.assertIn('Número de pasaporte',DOCUMENT_RULES['pasaporte']['fields'])
+
+    def test_clear_missing_fields_proposes_rejection_instead_of_uncertainty(self):
+        r=self.result();r['decision']='manual';r['document_type_matches']=False;r['extracted']={}
+        r['checks']=[{'field':f,'present':False,'evidence':'No aparece en el texto legible'} for f in DOCUMENT_RULES['identidad']['fields']]
+        self.assertEqual(self.check(r)['decision'],'observar')

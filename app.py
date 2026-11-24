@@ -15,7 +15,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 from flask import Flask, g, jsonify, request, session, send_file, send_from_directory
 from document_rules import help_for_catalog
-from document_ai import inspect_document, enabled as document_ai_enabled, configured as document_ai_configured
+from document_ai import inspect_document, enabled as document_ai_enabled, configured as document_ai_configured, RULE_VERSION as DOCUMENT_AI_RULE_VERSION
 from werkzeug.security import check_password_hash, generate_password_hash
 from persistence import connect, get_document, put_document
 
@@ -91,7 +91,7 @@ def request_record(rid):
 def event(rid,status,note,visibility='public'):
     db().execute('INSERT INTO events(request_id,status,note,actor_name,created,visibility) VALUES(?,?,?,?,?,?)',(rid,status,note,g.user['name'],now(),visibility))
 def notify(uid,title,body,target):
-    db().execute('INSERT INTO notifications(user_id,title,body,target,created) VALUES(?,?,?,?,?)',(uid,title,body,target,now()))
+    return db().execute('INSERT INTO notifications(user_id,title,body,target,created) VALUES(?,?,?,?,?)',(uid,title,body,target,now())).lastrowid
 def simple_pdf(title,lines):
     def esc(s):return s.replace('\\','\\\\').replace('(','\\(').replace(')','\\)')
     content='BT /F1 18 Tf 55 780 Td ('+esc(title)+') Tj /F1 11 Tf '
@@ -269,7 +269,7 @@ def run_document_review(raw,mime,requirement,r,force=False):
     try:
         result=inspect_document(raw,mime,requirement,profile=document_review_context(r),today=now()[:10],force=force)
     except Exception:
-        result={'decision':'manual','reason':'No se pudo completar la lectura. El funcionario revisará el archivo.','source':'Control de disponibilidad','rules_version':'academico-v2'}
+        result={'decision':'manual','reason':'No se pudo completar la lectura. El funcionario revisará el archivo.','source':'Control de disponibilidad','rules_version':DOCUMENT_AI_RULE_VERSION}
     if result:result['created']=now()
     return result
 
@@ -424,6 +424,49 @@ def institutional_query():
     db().execute('INSERT INTO query_log(user_id,person_code,source,result,created) VALUES(?,?,?,?,?)',(g.user['id'],code,source,'Encontrado' if r else 'No encontrado',now()))
     return jsonify(result)
 
+@app.post('/api/documents/<int:did>/ai')
+@auth(staff=True)
+def analyze_document(did):
+    doc=one('SELECT * FROM documents WHERE id=?',(did,))
+    if not doc:return fail('Documento no encontrado.',404)
+    r=request_record(doc['request_id'])
+    if not r:return fail('Solicitud no encontrada.',404)
+    if r['status'] in ('Resuelta','Cerrada','Rechazada') or doc['superseded']:return fail('Este documento ya no admite nuevas sugerencias.',409)
+    if not document_ai_configured():return fail('Foundry aún no está configurado.',503)
+    stored=get_document(DATA,doc['path'])
+    raw=stored.read_bytes() if isinstance(stored,Path) else stored.read()
+    result=run_document_review(raw,doc['mime'],doc['requirement'],r,force=True)
+    db().execute('UPDATE documents SET ai_review=? WHERE id=?',(dumps(result),did))
+    title={'aceptar':'IA sugiere: aceptarlo','observar':'IA sugiere: rechazarlo','manual':'IA sugiere: revisarlo'}[result['decision']]
+    event(r['id'],title,doc['requirement']+': '+result['reason'],'internal')
+    return jsonify(document_id=did,proposal=result)
+
+@app.post('/api/requests/<int:rid>/notify-document')
+@auth(staff=True)
+def notify_missing_document(rid):
+    r=request_record(rid)
+    if not r:return fail('Solicitud no encontrada.',404)
+    if r['status'] in ('Resuelta','Cerrada','Rechazada'):return fail('El expediente está cerrado.',409)
+    requirement=str((request.get_json(silent=True) or {}).get('requirement','')).strip()
+    group=next((item for item in document_groups(r) if item['name']==requirement),None)
+    if not group:return fail('Documento requerido no encontrado.',404)
+    if group.get('document'):return fail('El documento ya fue presentado. Actualiza el expediente.',409)
+    title='Documento pendiente de entrega'
+    body=r['folio']+': adjunta '+requirement+' para continuar la revisión de tu solicitud.'
+    from urllib.parse import quote
+    target=f'/solicitudes/{rid}?accion=adjuntar&requisito='+quote(requirement,safe='')
+    existing=one('SELECT id FROM notifications WHERE user_id=? AND title=? AND body=? AND target=? AND read=0 ORDER BY id DESC',(r['user_id'],title,body,target))
+    if existing:return jsonify(ok=True,duplicate=True,notification_id=existing['id'],portal='registrado')
+    nid=notify(r['user_id'],title,body,target)
+    owner=one('SELECT email,phone FROM users WHERE id=?',(r['user_id'],))
+    channels={}
+    for channel,contact in [('email',owner['email']),('whatsapp',owner['phone'])]:
+        status='pending_configuration' if contact else 'no_contact'
+        db().execute('INSERT INTO notification_deliveries(notification_id,channel,status,created) VALUES(?,?,?,?)',(nid,channel,status,now()))
+        channels[channel]=status
+    event(rid,'Ciudadano notificado',requirement+': aviso registrado en el portal. Correo y WhatsApp pendientes de habilitación.','internal')
+    return jsonify(ok=True,duplicate=False,notification_id=nid,portal='registrado',channels=channels)
+
 @app.post('/api/requests/<int:rid>/ai')
 @auth(staff=True)
 def analyze(rid):
@@ -433,7 +476,7 @@ def analyze(rid):
     docs=rows('SELECT * FROM documents WHERE request_id=? AND superseded=0 ORDER BY id',(rid,))
     if not docs:return fail('Adjunta un documento para analizar su contenido.',400)
     # Límite explícito para no sobrepasar el tiempo de una petición ni multiplicar llamadas.
-    selected=[d for d in docs if not d.get('ai_review') or json.loads(d['ai_review']).get('rules_version')!='academico-v2'][:3]
+    selected=[d for d in docs if not d.get('ai_review') or json.loads(d['ai_review']).get('rules_version')!=DOCUMENT_AI_RULE_VERSION][:3]
     if not selected:selected=docs[:3]
     results=[]
     for doc in selected:
@@ -448,7 +491,7 @@ def analyze(rid):
     for doc in all_results:
         proposal=json.loads(doc['ai_review']) if doc['ai_review'] else None
         observations.append(doc['requirement']+': '+(labels[proposal['decision']]+'. '+proposal['reason'] if proposal else 'Pendiente de análisis.'))
-    result={'clasificacion':'Recomendaciones por documento · pendientes de confirmación humana','resumen':f'Se leyó el contenido de {len(results)} archivo(s) en esta ejecución. Consulta los criterios y coincidencias de cada documento. Máximo tres archivos por ejecución.','observaciones':observations,'borrador':'El funcionario debe confirmar la revisión de los documentos antes de comunicar una decisión al ciudadano.','created':now(),'source':'Microsoft Foundry','rules_version':'academico-v2'}
+    result={'clasificacion':'Recomendaciones por documento · pendientes de confirmación humana','resumen':f'Se leyó el contenido de {len(results)} archivo(s) en esta ejecución. Consulta los criterios y coincidencias de cada documento. Máximo tres archivos por ejecución.','observaciones':observations,'borrador':'El funcionario debe confirmar la revisión de los documentos antes de comunicar una decisión al ciudadano.','created':now(),'source':'Microsoft Foundry','rules_version':DOCUMENT_AI_RULE_VERSION}
     db().execute('UPDATE requests SET ai=? WHERE id=?',(dumps(result),rid))
     event(rid,r['status'],'Se generaron recomendaciones sobre el contenido de los documentos; pendientes de confirmación humana.','internal')
     return jsonify(result)

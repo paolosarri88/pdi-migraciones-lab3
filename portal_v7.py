@@ -15,6 +15,7 @@ def install(ctx):
     app,auth,db,one,rows,fail,now,event,notify=(ctx[k] for k in ('app','auth','db','one','rows','fail','now','event','notify'))
     c=ctx['connect'](ctx['DATA'],initialize=True)
     c.executescript('''CREATE TABLE IF NOT EXISTS action_history(id INTEGER PRIMARY KEY,event_id INTEGER,last_event_id INTEGER,request_id INTEGER,before_json TEXT,after_json TEXT,undone INTEGER DEFAULT 0);
+    CREATE TABLE IF NOT EXISTS notification_deliveries(id INTEGER PRIMARY KEY,notification_id INTEGER,channel TEXT,status TEXT,created TEXT,UNIQUE(notification_id,channel));
     CREATE TABLE IF NOT EXISTS appointment_code_aliases(id INTEGER PRIMARY KEY,code TEXT UNIQUE,appointment_id INTEGER);
     ''')
     for table,name,typ in [('appointments','booking_source',"TEXT DEFAULT 'staff'"),('reception_captures','guest_name','TEXT')]:

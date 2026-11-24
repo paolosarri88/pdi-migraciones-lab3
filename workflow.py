@@ -40,6 +40,11 @@ def active_notices(uid):
         result.append({'id':f"appointment-{a['id']}",'title':'Confirma tu próxima cita','body':f"Atención el {a['date']} a las {a['time']}. Revisa el horario y confirma tu asistencia.",'target':f"/citas?cita={a['id']}",'read':0,'created':a['date'],'action_required':True})
     for n in items:
         u=urlparse(n['target']);q=parse_qs(u.query)
+        if q.get('accion')==['adjuntar'] and q.get('requisito'):
+            rid=u.path.rsplit('/',1)[-1]
+            record=ctx['one']('SELECT * FROM requests WHERE id=? AND user_id=?',(int(rid),uid)) if rid.isdigit() else None
+            if record and record['status'] not in FINAL and any(x['name']==q['requisito'][0] and not x['document'] for x in document_groups(record)):result.append(n)
+            continue
         if q.get('accion')==['adjuntar'] or (u.path=='/citas' and q.get('cita')):continue
         result.append(n)
     return result
