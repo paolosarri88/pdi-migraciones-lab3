@@ -250,7 +250,8 @@ def update_request(rid):
     if not r:return fail('Solicitud no encontrada.',404)
     d=request.get_json(silent=True) or {};status=d.get('status',r['status']);note=str(d.get('note','')).strip()
     if status not in STATUSES:return fail('Estado no válido.')
-    if not note:return fail('Escribe una observación para dejar trazabilidad.')
+    if status=='Requiere antecedentes' and len(note)<10:return fail('Explica qué antecedentes debe entregar el ciudadano (al menos 10 caracteres).')
+    if not note:note='El funcionario registró la resolución.' if status=='Resuelta' else 'El funcionario actualizó el estado del expediente.'
     if len(note)>3000:return fail('La observación es demasiado extensa.')
     if r['status'] in ('Resuelta','Cerrada','Rechazada'):return fail('Utiliza Reabrir expediente e indica el motivo antes de modificar una decisión final.',409)
     if status=='Resuelta' and any(x['status']!='Aceptado' for x in document_groups(r)):return fail('Acepta todos los antecedentes requeridos antes de resolver favorablemente.',409)
@@ -330,7 +331,7 @@ def receipt(rid):
 @app.get('/api/appointments')
 @auth()
 def appointments():
-    sql='SELECT a.*,u.name as owner_name,r.folio,v.ticket,v.entered,v.started,v.exited FROM appointments a JOIN users u ON u.id=a.user_id LEFT JOIN requests r ON r.id=a.request_id LEFT JOIN visits v ON v.appointment_id=a.id'
+    sql="SELECT a.*,COALESCE(u.name,'Visitante sin cita') as owner_name,r.folio,v.ticket,v.entered,v.started,v.exited FROM appointments a LEFT JOIN users u ON u.id=a.user_id LEFT JOIN requests r ON r.id=a.request_id LEFT JOIN visits v ON v.appointment_id=a.id"
     return jsonify(items=rows(sql+(' WHERE a.user_id=?' if g.user['role']=='citizen' else '')+' ORDER BY a.date,a.time', (g.user['id'],) if g.user['role']=='citizen' else ()))
 
 @app.post('/api/appointments')
@@ -472,4 +473,6 @@ from portal_v5 import install as install_v5
 install_v5(globals())
 from portal_v6 import install as install_v6
 install_v6(globals())
+from portal_v7 import install as install_v7
+install_v7(globals())
 if __name__=='__main__':app.run(host=os.environ.get('HOST','127.0.0.1'),port=int(os.environ.get('PORT','8080')),debug=False)

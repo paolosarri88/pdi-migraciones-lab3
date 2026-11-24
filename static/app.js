@@ -26,7 +26,7 @@ function sidebar(){const items=isStaff()?[['/presencial','Fila presencial','home
 function shell(content,{kiosk=false,publicPage=false}={}){$('#app').innerHTML=header(kiosk)+(!kiosk&&!publicPage&&user?sidebar():'')+`<div class="${!kiosk&&!publicPage&&user?'workspace':''}"><main id="main" class="${kiosk?'kiosk':'page'}">${content}</main>${kiosk?'':footer()}</div>`;document.title=(document.querySelector('h1')?.textContent||'Atención migratoria')+' | Prototipo PDI';}
 function heading(title,description='',action='',eyebrow='Atención migratoria'){return `<div class="topline"><div><div class="eyebrow">${esc(eyebrow)}</div><h1>${esc(title)}</h1>${description?`<p class="intro">${esc(description)}</p>`:''}</div>${action}</div>`;}
 function panel(title,body,extra=''){return `<section class="panel"><div class="panel-title"><h2>${title}</h2>${extra}</div>${body}</section>`;}
-function modal(title,body){const d=$('#dialog');d.innerHTML=`<div class="dialog-head"><h2>${esc(title)}</h2><button class="icon-button" data-action="close" aria-label="Cerrar">${icon('close')}</button></div><div class="dialog-body">${body}</div>`;d.showModal();}
+function modal(title,body){const d=$('#dialog');d.innerHTML=`<div class="dialog-head"><h2>${esc(title)}</h2><button class="icon-button" data-action="close" aria-label="Cerrar">${icon('close')}</button></div><div class="dialog-body">${body}</div>`;d.querySelectorAll('form').forEach(f=>f.noValidate=true);d.showModal();}
 async function refreshData(){const [r,a,n]=await Promise.all([api('/api/requests'),api('/api/appointments'),api('/api/notifications')]);requests=r.items;appointments=a.items;notifications=n.items;}
 
 function loginPage(){
@@ -137,5 +137,5 @@ document.addEventListener('submit',async e=>{
  if(f.id==='kiosk-form'){const r=await api('/api/kiosk','POST',{code:obj.code,action:f.dataset.mode});shell(`<div class="eyebrow">Atención presencial</div><h1>${f.dataset.mode==='arrival'?'Tu llegada quedó registrada':f.dataset.mode==='exit'?'Tu salida quedó registrada':'Datos de tu atención'}</h1>${r.visit?.ticket?`<div class="ticket">${esc(r.visit.ticket)}</div>`:''}<h2>${esc(r.appointment.owner_name)}</h2><p class="intro">${date(r.appointment.date)} · ${esc(r.appointment.time)}<br>${esc(r.appointment.office)}</p><p>${badge(r.appointment.status)}</p><p class="kiosk-help">${f.dataset.mode==='exit'?'Gracias por tu visita.':r.visit?'Espera el llamado del funcionario.':'Registra tu llegada el día de la cita.'}</p><div class="gap-top">${link('/totem','Volver al inicio','btn')}</div><p class="source-note">Datos ficticios · Demostración académica</p>`,{kiosk:true});return;}
  }catch(ex){if(err)err.textContent=ex.message;else toast(ex.message);}finally{if(btn)btn.disabled=false;}
 });
-window.addEventListener('popstate',render);
+window.addEventListener('popstate',()=>render());
 window.addEventListener('DOMContentLoaded',()=>render());

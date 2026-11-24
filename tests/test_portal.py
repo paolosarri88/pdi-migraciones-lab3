@@ -57,7 +57,7 @@ class PortalTests(unittest.TestCase):
     def test_04_appointment_authorization_and_state(self):
         c,h=self.login()
         self.assertEqual(c.patch('/api/appointments/2',json={'action':'cancel'},headers=h).status_code,404)
-        self.assertEqual(c.patch('/api/appointments/1',json={'action':'confirm'},headers=h).status_code,200)
+        self.assertEqual(c.patch('/api/appointments/1',json={'action':'confirm'},headers=h).status_code,409)
         self.assertEqual(c.patch('/api/appointments/1',json={'action':'confirm'},headers=h).status_code,409)
         self.assertEqual(c.patch('/api/appointments/1',json={'action':'cancel'},headers=h).status_code,200)
         self.assertEqual(c.get('/api/requests/3').json['request']['status'],'En revisión')

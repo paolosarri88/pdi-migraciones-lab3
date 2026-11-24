@@ -14,6 +14,10 @@ La configuración cloud ejecuta la web y la API en Cloud Run, los registros en C
 
 Las cuentas ciudadanas precargadas usan personajes de GTA y conservan sus RUN/correos/claves. [Mapa de cuentas, fuentes y datos inventados](docs/personajes-gta.md). El tótem incluye carga de identificación y captura con detección local de rostro; no verifica identidad.
 
+## Integración de IA preparada
+
+[Guía para conectar revisión documental y chat](docs/integrar-ia.md): archivos, contrato de resultados, variables y comprobaciones. Ambas interfaces se señalan en desarrollo hasta conectar el servicio real.
+
 ## Atención online y presencial
 
 La bandeja online está separada de «Atención presencial». «Personas» permite buscar una ficha, revisar todas sus solicitudes, registrar una llegada y crear un trámite en nombre del ciudadano. Los documentos adicionales, reaperturas y rectificaciones conservan trazabilidad. [Flujo y límites de la PoC](docs/flujo-atencion.md).

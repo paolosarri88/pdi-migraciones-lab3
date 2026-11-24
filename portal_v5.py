@@ -51,7 +51,8 @@ def install(ctx):
         if not person(uid):return fail('Persona no encontrada.',404)
         d=request.get_json(silent=True) or {};typ=d.get('type_id');description=str(d.get('description','')).strip()
         catalog=next((x for x in ctx['CATALOG'] if x['id']==typ),None)
-        if not catalog or not 15<=len(description)<=5000:return fail('Selecciona un trámite y describe la atención (15 a 5.000 caracteres).')
+        if not catalog or len(description)>5000:return fail('Selecciona un trámite y usa como máximo 5.000 caracteres.')
+        if not description:description='Solicitud presencial de '+catalog['name']+'.'
         duplicate=one("SELECT folio FROM requests WHERE user_id=? AND type_id=? AND status NOT IN ('Resuelta','Cerrada','Rechazada')",(uid,typ))
         if duplicate and not catalog['allow_multiple_active']:return fail('Ya existe un expediente activo: '+duplicate['folio'],409)
         cur=db().execute('INSERT INTO requests(user_id,type_id,status,description,details,created,updated,assigned_to,channel) VALUES(?,?,?,?,?,?,?,?,?)',(uid,typ,'En revisión',description,ctx['dumps'](d.get('details',{})),now(),now(),g.user['id'],'presencial'));rid=cur.lastrowid
@@ -64,7 +65,7 @@ def install(ctx):
     def library(uid):
         if not allowed_person(uid):return fail('No tienes permiso.',403)
         if not person(uid):return fail('Persona no encontrada.',404)
-        docs=rows("SELECT d.id,d.name,d.requirement,d.size,d.created,d.valid_until,d.review_status,r.folio FROM documents d JOIN requests r ON r.id=d.request_id WHERE r.user_id=? AND d.superseded=0 ORDER BY d.id DESC",(uid,))
+        docs=rows("SELECT d.id,d.name,d.requirement,d.size,d.created,d.valid_until,d.review_status,r.folio,r.id as request_id FROM documents d JOIN requests r ON r.id=d.request_id WHERE r.user_id=? AND d.superseded=0 ORDER BY d.id DESC",(uid,))
         for d in docs:d['expired']=bool(d['valid_until'] and d['valid_until']<date.fromisoformat(now()[:10]).isoformat())
         return jsonify(items=docs)
     @app.post('/api/requests/<int:rid>/reuse-document')

@@ -1,100 +1,65 @@
-# Flujo de atención y ventanas de simulación
+# Flujo vigente de la PoC · 24 de noviembre de 2026
 
-## Roles y prioridad
+## Ciudadano y reservas
 
-Ciudadano: ingresa una solicitud, adjunta documentos, corrige antecedentes y solicita coordinación de una cita. Funcionario o administrador: revisa los documentos, toma decisiones, coordina la fecha/hora y atiende presencialmente.
+El ciudadano crea solicitudes, adjunta/corrige documentos y reserva directamente en «Mis citas». Puede asociar una solicitud abierta o pedir atención general. Escoge un bloque libre de treinta minutos y la cita queda **Confirmada** en la misma operación. No hay solicitud de coordinación ni confirmación posterior.
 
-La misma persona funcionaria puede atender ambos canales. La prioridad del prototipo es: atención presencial ya iniciada, luego personas con llegada registrada en orden de antigüedad, después expedientes online. «Atención presencial» muestra esa prioridad y botones para iniciar/finalizar atención. «Bandeja de solicitudes» muestra únicamente solicitudes originadas online; las presenciales se consultan en su sección y en la ficha de la persona. Las acciones de expediente distinguen revisar documentos, esperar antecedentes del ciudadano, coordinar cita, atención programada y resolver expediente. Una cita terminada deja de tratarse como una atención futura.
+El horario configurado para la demostración es lunes a viernes, 09:00–16:00, con último bloque a las 15:30 y hasta noventa días de anticipación. No es una afirmación sobre horarios oficiales ni incluye feriados. Se impiden bloques ocupados, pasados, citas duplicadas por expediente y más de una cita activa por persona/día. La reserva se serializa en el servidor para evitar dos confirmaciones del mismo bloque.
 
-La cola presencial y las bandejas se actualizan cada cinco segundos. Las operaciones del tótem en otra pestaña del mismo navegador notifican además al portal mediante un evento de almacenamiento local. No es una integración con un sistema físico real ni una cola productiva distribuida.
+El funcionario no programa nuevas citas desde este flujo. Su botón y ruta anterior se retiraron; la ruta devuelve indicación de reservar desde el portal ciudadano. Las propuestas antiguas pendientes se migraron a Confirmada. Los códigos nuevos son numéricos tras `CITA-`; los códigos alfanuméricos anteriores se conservan como alias y se muestran con su nuevo código numérico.
 
-## Documentos y recomendación IA
+## Citas previstas y fila real
 
-Los documentos se presentan contraídos, con flecha individual. Siempre aparecen todos: primero los pendientes de revisión, luego faltantes, rechazados, aceptados y versiones anteriores. Se guarda cada revisión por separado. No hay selector «Mostrar» ni controles globales de expandir/contraer. Los colores más visibles corresponden al estado humano; el resumen no agrega un segundo trazo junto al del documento.
+«Fila presencial» aparece primero en el menú y su contador solo incluye personas con llegada registrada. La misma página muestra por separado las citas previstas para hoy: una cita confirmada aparece como **No ha llegado** hasta pasar por el tótem. Tener una cita no equivale a estar en la fila ni habilita iniciar atención antes de llegar.
 
-La IA puede **proponer aceptar**, **proponer rechazar** o **pedir criterio al funcionario**. Su resultado se guarda aparte y nunca modifica el estado documental ni el expediente. En ausencia de IA real no se inventa una recomendación. El trazo de color corresponde al estado humano: revisión azul, aceptación verde, rechazo rojo y faltantes amarillo. El funcionario también decide el resultado final del expediente.
+Las llegadas están ordenadas por antigüedad, con posibilidad de llamar fuera de orden si alguien no responde. «Llamar e iniciar» abre la ficha y anuncia turno, nombre y módulo en el tótem. Cada funcionario solo puede tener una atención activa, controlado en servidor e índice de base de datos. Otro funcionario no puede tomarla o finalizarla. El módulo es estable por cuenta (por ejemplo, Javier usa Módulo 2).
 
-La carga por el funcionario aparece como «Incorporar copia recibida por el funcionario» y permite indicar correo o presentación presencial. Es una acción manual explícita con procedencia obligatoria; el portal no lee correos automáticamente. Se conserva la versión anterior y la procedencia del archivo.
+La bandeja online permanece separada de los trámites presenciales y muestra acciones del funcionario, no solo el estado ciudadano. Los contadores se actualizan cada cinco segundos. El tablero del tótem se actualiza cada tres segundos y las citas previstas cada diez.
 
-## Accesos y cuentas
-
-El ciudadano ingresa desde «Iniciar sesión»; funcionario/administrador desde «Ingreso funcionarios», con correo y contraseña. La cuenta determina sus permisos. Las formas se separan y el servidor valida el acceso indicado.
-
-El RUN se ingresa sin puntos y con guion: `00000001-9` para María. El control verifica formato, no acredita identidad ante Registro Civil. En «Cuentas disponibles para probar» se listan las identidades precargadas y sus correos/RUN. Las cuentas ciudadanas precargadas comparten `Ciudadano2026!`; las cuentas nuevas usan su propia clave y no se publican en esa lista.
-
-«Crear cuenta» solicita nombre, correo y clave, y asigna un RUN sintético. No solicita un RUT real ni otorga roles de funcionario o administrador. La confirmación muestra el RUN para ingresarlo después. No hay conexión real con ClaveÚnica ni envío de correo de verificación.
-
-Los certificados de viajes y domicilio permiten más de un expediente activo en la configuración del prototipo. El resto conserva el control de duplicados y muestra «En proceso» en su tarjeta del catálogo. Esta es una regla de la simulación, no una afirmación sobre políticas legales de trámites reales.
-
-## Tótem: flujo definido
+## Tótem
 
 URL: https://pdi-portal-vwjcdgy22a-uc.a.run.app/totem
 
-1. El funcionario programa una cita y el ciudadano confirma en su portal.
-2. En el recinto, el ciudadano ingresa el código de cita en «Registrar mi llegada», el día correspondiente. Se asigna un turno y aparece en la cola del funcionario.
-3. «Consultar mi turno» muestra la información asociada al código, sin volver a registrar llegada.
-4. El funcionario inicia y finaliza la atención. El fin de atención tiene su propia marca de tiempo.
-5. El ciudadano registra su salida en el tótem. Se guarda por separado del fin de atención y se impide repetirla.
+Bienvenida → «¿Tienes cita?»:
 
-El código localiza una cita; no verifica por sí solo que la persona sea su titular. No se implementaron cámara, lectura física de cédula ni reconocimiento facial. Detectar la presencia de un rostro no equivale a verificar identidad. Para una futura demostración de escaneo/identidad primero se debe definir qué acredita, qué datos utiliza y cómo se manejan errores; no basta con agregar una librería.
+- **Sí:** solo pide los números del código. `CITA-` es texto fijo y el teclado es numérico convencional. La cita debe estar confirmada y corresponder al día actual. Si ya llegó, muestra su turno existente.
+- **No:** prepara una recepción provisional sin pedir RUN. La persona carga una copia del documento y se captura una foto; el funcionario debe vincular esa recepción a una persona al atenderla.
 
-## GEPOL y Registro Civil
+En ambos casos se presenta el lector de documento y una carga PDF/JPG/PNG (hasta 5 MB) para este computador. El lector físico/OCR no está conectado. Después se solicita permiso de cámara y un único rostro visible durante cinco segundos. El contador reinicia si se pierde o hay más de un rostro. No hay comparación de identidad ni prueba de vida; el funcionario contrasta el documento y la persona.
 
-- https://pdi-portal-vwjcdgy22a-uc.a.run.app/simuladores/gepol
-- https://pdi-portal-vwjcdgy22a-uc.a.run.app/simuladores/registro-civil
+Se guardan copias privadas, legibles solo por funcionarios. El token de recepción vence a los quince minutos y se consume al completar el ingreso. El tótem muestra el turno y los llamados, sin exponer RUN, correo, documentos ni fotos en su tablero. Se retiró «Registrar salida»; las APIs antiguas permanecen por compatibilidad.
 
-Se abren desde «Consulta institucional» o desde un expediente, en otra pestaña, con el RUN precargado. También permiten ingresar RUN, nombre o pasaporte manualmente. Son rutas independientes del mismo servicio Cloud Run, con estilos propios; no son nuevos servidores ni sistemas oficiales. Sus datos vienen de la misma base de demostración.
+## Recepción provisional y ficha personal
 
-Las páginas no solicitan contraseñas institucionales. Los datos de consulta requieren sesión de funcionario/administrador y se registran en la auditoría. Un ciudadano recibe rechazo de acceso a esas APIs.
+Una recepción sin cita entra a la fila como Visitante sin cita. Al iniciarla se abre su copia/foto y un formulario para buscar una persona por nombre/RUN, o registrar una nueva. Solo el funcionario que la atiende puede vincularla, indicando qué contrastó. No puede vincularse a una persona que ya tenga otra llegada activa.
 
-La referencia GEPOL aportada por el usuario pertenece a un dominio `.com.br`: se tomó su estilo visual antiguo como referencia y se utilizó marca textual propia, sin atribuirlo al sistema chileno real. Registro Civil usa una composición propia en azul/rojo y mantiene aviso visible de simulación.
+La ficha reúne contactos, consultas institucionales, capturas, documentos y todas las solicitudes. Los documentos muestran tres elementos; «Ver más» despliega el resto y el botón cambia a **Ver menos al final del último documento**. Cada folio de procedencia enlaza al expediente.
 
-## Ficha de persona y atención sin cita
+«Crear solicitud presencial» no exige descripción. El funcionario puede incorporar una copia indicando procedencia presencial/correo o usar la identificación capturada en el tótem. Cada incorporación queda pendiente hasta que registre su decisión explícitamente. El ciudadano puede completar después los antecedentes desde su portal. No hay lectura automática de correos ni envío de SMS.
 
-«Personas» busca por RUN o nombre. Cada ficha reúne contactos, enlaces a GEPOL/Registro Civil, documentos y todas las solicitudes (online y presenciales, activas y finalizadas). El nombre del solicitante en la bandeja o el expediente abre su ficha.
+## Requisitos, resolución y certificado
 
-El funcionario puede registrar una persona nueva: nombre, correo, clave inicial acordada con ella y contacto opcional. Se asigna un RUN sintético y el rol siempre es ciudadano. No se envía un correo de activación ni un SMS; en este prototipo la persona usa ese correo/RUN y la clave acordada para ingresar.
+Los requisitos del trámite aparecen primero, contraídos y ordenados con pendientes delante. Una línea gris separa los documentos adicionales solicitados por el funcionario. Un adicional activo también se exige hasta que se acepte o se cancele con motivo. Las versiones anteriores se conservan separadas.
 
-Desde la ficha puede registrar una llegada sin cita y crear una solicitud presencial. Se impiden llegadas duplicadas y se indica usar el tótem si existe una cita para hoy. La llegada sin cita puede preceder a la creación del expediente; por eso la cola siempre enlaza a la persona y solo enlaza a un expediente cuando ya está asociado.
+Solo puede resolverse favorablemente cuando todos los requisitos activos están aceptados. No basta con estar en revisión ni rechazados. La observación es obligatoria al pedir antecedentes, y opcional al resolver. Una solicitud **Resuelta** ofrece un PDF básico con folio, persona y trámite, identificado como prototipo sin validez oficial. La descarga exige permiso sobre ese expediente y vuelve a bloquearse si se deshace la resolución.
 
-La copia digitalizada se incorpora al expediente indicando su procedencia y lo verificado. Después el funcionario registra «Aceptado» explícitamente. La carga por sí sola no acredita la identidad ni acepta el documento. Si falta un antecedente, el ciudadano puede entrar al mismo expediente desde el portal y adjuntarlo. El tótem actual registra códigos de cita: no entrega una fotocopia automática de una cédula.
+## Historial reversible
 
-## Documentos adicionales y errores de registro
+El lápiz corrige título/nota y permite seleccionar explícitamente una corrección de estado. La papelera ahora **deshace** la acción, en lugar de limitarse a ocultar una anotación:
 
-«Solicitar otro documento» permite escoger un tipo del catálogo aún no solicitado y explicar su necesidad. Se agrega al expediente y se avisa al ciudadano dentro del portal. Un requisito adicional puede cancelarse con motivo; los archivos que ya tuviera quedan como versiones anteriores y el registro de la cancelación se conserva. No se permite cancelar los requisitos base del catálogo con esta acción.
+- Las nuevas mutaciones guardan antes/después de expediente, documentos, requisitos y citas asociadas.
+- Deshacer una aceptación devuelve estado, observación y metadatos de revisión anteriores.
+- Deshacer una incorporación recupera la versión activa anterior; el nuevo archivo permanece archivado, no se borra del almacenamiento.
+- Deshacer rechazo/resolución restaura el estado previo, por lo que la línea temporal deja de presentarse como finalizada.
+- Se conserva original, motivo y autor en auditoría, y se retiran avisos de la acción deshecha.
+- Se deshace en orden inverso para no pisar cambios posteriores. Una cita con atención iniciada no puede restaurarse desde la papelera; la sesión se gestiona desde su atención. Solo administración puede deshacer un cierre.
 
-Una decisión final ya no se revierte con el selector normal. «Reabrir expediente» exige un motivo y registra «Expediente reabierto» conservando la decisión anterior. Solo administración puede reabrir el estado «Cerrada».
+**Límite de los registros antiguos:** antes no existían instantáneas completas. Se permite reconstruir revisiones documentales identificables y transiciones de estado con historial suficiente. Si no se puede determinar el estado anterior con seguridad, se rechaza el deshacer y se indica usar corrección explícita; no se inventan metadatos históricos ni se borran datos para aparentar una restauración.
 
-«Corregir una anotación» permite rectificar un registro equivocado con motivo. Conserva texto, fecha, autor y motivo de rectificación; el original pasa al apartado contraído «Anotaciones rectificadas». El ciudadano ve la corrección y puede desplegar su motivo; el funcionario también conserva el texto original. Rectificar una anotación no cambia el estado del expediente ni deshace por sí solo una revisión documental. Las correcciones y reaperturas no se rectifican desde esta opción. No se borran registros de prueba automáticamente al desplegar.
+## IA y consultas institucionales
 
-## Reutilización y vigencia
+La propuesta documental y el chat ciudadano se señalan **En desarrollo** mientras no hay servicio conectado. El chat es un botón movible con panel y entrada deshabilitada. La revisión documental conserva su adaptador; solo el funcionario cambia el estado del documento. Puntos de integración en `integrar-ia.md`.
 
-La ficha ofrece una biblioteca lógica de documentos: los objetos permanecen privados y asociados a versiones de expedientes. «Usar documento existente» solo ofrece archivos de esa misma persona, aceptados, no sustituidos y sin vencimiento conocido. El tipo debe corresponder exactamente al requisito de destino.
+GEPOL y Registro Civil se abren en otra ventana, con RUN precargado, desde ficha/expediente o consulta institucional. Son simuladores propios, con datos del mismo laboratorio; no sistemas oficiales. GEPOL muestra antecedentes ficticios separados de identidad. Fuentes y límites de las identidades GTA en `personajes-gta.md`.
 
-La nueva solicitud crea una referencia a la versión del archivo (`source_document_id`) y conserva su propio estado «En revisión», sin copiar el funcionario ni la aceptación anterior. No duplica el objeto de Storage. Una vigencia desconocida se indica como pendiente de comprobación; no se inventa una duración universal. El funcionario puede registrar fecha de vencimiento con motivo antes del cierre. Un vencimiento conocido impide volver a reutilizar esa versión.
-
-Este es el diseño de la PoC, no una afirmación sobre requisitos jurídicos o procedimientos actuales de organismos reales. En producción se necesitarían reglas por trámite, verificación de identidad, consentimiento/base de tratamiento, retención, activación de cuentas y controles de concurrencia más completos.
-
-## Actualización del 24 de noviembre: fila y tótem
-
-«Fila presencial» aparece primero en el menú y cuenta solo las personas en espera. «Bandeja de solicitudes» cuenta expedientes online activos que requieren trabajo (revisión, resolución o coordinación), excluyendo finalizados y casos solo a la espera de antecedentes. Los contadores se actualizan cada cinco segundos aunque el funcionario esté en otra sección.
-
-«Llamar e iniciar» asigna la atención al funcionario y abre la ficha de la persona. El servidor serializa esa asignación y un índice impide dos atenciones simultáneas del mismo funcionario. Otro funcionario no puede tomar o finalizar una atención asignada. Se puede llamar fuera del orden de llegada si alguien no responde. Las atenciones antiguas que no tenían responsable aparecen con «Retomar atención»; se conservan sin inventar quién las atendió.
-
-El módulo se asigna de forma estable a partir del identificador de la cuenta funcionaria (por ejemplo, Javier usa «Módulo 2»). En este prototipo no se administra un inventario físico de puestos.
-
-Tótem: bienvenida táctil → RUN o código de cita → copia PDF/JPG/PNG del documento → cámara → un rostro visible durante cinco segundos continuos → turno. Si desaparece el rostro o aparece más de uno, el contador reinicia. La detección se ejecuta localmente en el navegador con MediaPipe; no compara identidades ni acredita presencia de una persona viva. La cámara se detiene al salir del paso. Si no hay cámara o permiso, se ofrece reintentar o acudir al mesón; no se inventa una captura satisfactoria.
-
-El lector físico se representa en pantalla; para esta versión se carga un archivo. Las copias y fotografías se guardan privadas con permiso de lectura solo para funcionarios. La ficha muestra las capturas, y «Incorporar identificación del tótem» añade la copia al expediente pendiente de revisión humana. El servidor usa una autorización de recepción de quince minutos y la consume tras registrar la llegada. Impide duplicar el ingreso al reutilizarla.
-
-La bienvenida y la pantalla de turno muestran los turnos llamados con nombre y módulo; no exponen RUN, correo, documentos ni fotografías. El tablero se actualiza cada tres segundos. Se retiraron del tótem «Registrar salida» y «Consultar turno» como opciones separadas. Reingresar un RUN/código ya recibido muestra su turno. Las APIs anteriores se conservan por compatibilidad, pero no se usan para el nuevo recorrido.
-
-## Historial y asignación simplificados
-
-El lápiz y la papelera aparecen junto a cada acción para funcionarios. El lápiz permite corregir título/nota y, de forma explícita, el estado actual; exige motivo. La papelera retira la anotación de la línea temporal, conserva original y motivo en `event_edits`, y no cambia el estado por sí sola. No se muestran las antiguas secciones «Corregir una anotación»/«Anotaciones rectificadas». Un expediente «Cerrada» se presenta en rojo y sigue necesitando reapertura por administración antes de modificar su estado.
-
-La asignación de un expediente muestra el responsable y botones «Tomar revisión»/«Liberar expediente». Identifica quién lo gestiona; no impide consultar a otros funcionarios. Un funcionario no puede apropiarse de una asignación ajena mediante ese botón; administración sí puede reasignar. Es distinta de la exclusividad de una sesión de atención presencial.
-
-La tabla enlaza el folio, incorpora fecha de ingreso y ordena por antigüedad dentro de cada prioridad. El expediente abre directamente los documentos, omitiendo el panel redundante de antecedentes declarados. La ficha muestra tres archivos y permite desplegar el resto. La ayuda documental del funcionario se presenta como criterios de revisión, no como instrucciones para adjuntar del ciudadano.
-
-MediaPipe Tasks Vision 0.10.21 y su modelo BlazeFace se incluyen en `static/vendor/mediapipe`, con licencia. [Documentación oficial del detector](https://developers.google.com/edge/mediapipe/solutions/vision/face_detector?tab=Web). No hay llamada a Azure ni envío de imágenes a Google para esta detección local. La inferencia documental Foundry continúa siendo una función distinta y pendiente de acceso.
+Rutas: `/simuladores/gepol`, `/simuladores/registro-civil`. Se requiere sesión de funcionario para consultar sus datos. La cuenta determina el rol; ningún dato del navegador otorga permisos de funcionario.

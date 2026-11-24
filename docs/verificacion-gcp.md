@@ -89,3 +89,18 @@ Imagen publicada: `portal:20261124032743` (etiqueta UTC). Se mantiene la misma U
 - Se preservan personas nuevas, cuentas de funcionario/administrador y expedientes/archivos existentes. La migración temática solo cambia las identidades precargadas. Fuentes y escenarios inventados en `personajes-gta.md`.
 
 La actualización automática de la tabla evita reemplazar un contenido idéntico y descarta una respuesta de sondeo si se cambió de sección. La IA documental real de Foundry sigue pendiente de acceso Azure.
+
+## Reservas confirmadas, recepción provisional y deshacer · 24 de noviembre
+
+Imagen final: `portal:20261124144014` (etiqueta UTC), publicada en el mismo servicio Cloud Run.
+
+- **29 pruebas locales aprobadas**, ejecución final de 2,114 segundos, más la comprobación Node de inicialización conjunta de scripts y navegación con el enrutador vigente.
+- **29 casos distintos comprobados en PostgreSQL entre dos ejecuciones:** la primera ejecutó 28 casos durante 793,122 segundos; 26 terminaron correctamente y los dos últimos se interrumpieron por cierre de la conexión. Se renovó el proxy y se repitieron esos dos casos, junto con el nuevo caso de asignación duplicada: las tres pruebas pasaron en 163,531 segundos. La base temporal de la ejecución interrumpida se eliminó explícitamente y la nueva se eliminó al finalizar.
+- Los casos nuevos verifican reservas Confirmadas sin coordinación, colisiones de bloques, cita prevista fuera de la fila hasta la llegada, recepción provisional sin RUN, vinculación de identidad por el funcionario, revisión deshecha que restaura metadatos, rechazo deshecho que restaura estado, incorporación deshecha que conserva la versión archivada y certificado privado condicionado a Resuelta.
+- La actualización final agrega captura de acciones sin cambio material (por ejemplo, tomar una asignación ya propia), para que su anotación también pueda deshacerse. Retira avisos generados por la acción deshecha. Las citas con atención iniciada no se restauran desde el historial del expediente.
+- **Comprobación visual local aislada:** reserva ciudadana del 25 de noviembre a las 09:00 confirmada en la misma operación; chat En desarrollo que abre y se arrastra; ficha con folios enlazados y Ver menos tras el último documento; citas previstas con Niko Bellic marcado No ha llegado fuera de la fila; tótem con pregunta de cita, prefijo CITA- fijo y teclado numérico completo sin desplazamiento en la vista de prueba.
+- Se corrigió una colisión entre el atributo del contador del menú y el de Ver más que podía borrar su texto al actualizar. Los contadores ahora solo modifican las etiquetas de navegación.
+- **HTTPS público:** nuevas rutas y recursos, horario/bloques, citas previstas, permisos de fichas/bibliotecas, simuladores y PDF de certificado de ejemplo comprobados sin mutar expedientes publicados. La revisión en navegador se hizo sobre copia aislada, no sobre datos de usuarios del portal compartido.
+- Los formularios emergentes usan la validación en español y Atrás/Adelante utiliza el enrutador actual, incluidas las nuevas recepciones.
+
+La papelera conserva auditoría y deshace en orden inverso. Los registros históricos previos a las instantáneas solo permiten restauración cuando existe información suficiente; en caso contrario se exige corrección explícita. No se inventan estados históricos. No se ejecutó una inferencia real de Foundry ni un chat real; ambos puntos quedan señalados En desarrollo y documentados en `integrar-ia.md`. La cámara/lector físico no se volvieron a probar en esta actualización; el lector/OCR sigue sin conectar y el recorrido sin cita utiliza vinculación humana.

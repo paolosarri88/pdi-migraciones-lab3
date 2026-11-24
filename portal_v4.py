@@ -32,7 +32,7 @@ def install(ctx):
     @app.get('/api/workboard')
     @auth(staff=True)
     def workboard():
-        queue=rows("SELECT a.*,u.name as owner_name,r.folio,v.ticket,v.entered,v.started,s.name as serving_name FROM appointments a JOIN users u ON u.id=a.user_id LEFT JOIN requests r ON r.id=a.request_id LEFT JOIN visits v ON v.appointment_id=a.id LEFT JOIN users s ON s.id=a.serving_by WHERE a.status IN ('Presente','En atención') ORDER BY CASE WHEN a.status='En atención' THEN 0 ELSE 1 END,v.entered,a.id")
+        queue=rows("SELECT a.*,COALESCE(u.name,'Visitante sin cita') as owner_name,r.folio,v.ticket,v.entered,v.started,s.name as serving_name FROM appointments a LEFT JOIN users u ON u.id=a.user_id LEFT JOIN requests r ON r.id=a.request_id LEFT JOIN visits v ON v.appointment_id=a.id LEFT JOIN users s ON s.id=a.serving_by WHERE a.status IN ('Presente','En atención') ORDER BY CASE WHEN a.status='En atención' THEN 0 ELSE 1 END,v.entered,a.id")
         cases=rows("SELECT r.*,u.name as owner_name FROM requests r JOIN users u ON u.id=r.user_id WHERE r.status NOT IN ('Resuelta','Cerrada','Rechazada') ORDER BY r.created,r.id")
         tasks=[]
         active_citations={a['request_id'] for a in rows("SELECT request_id FROM appointments WHERE status NOT IN ('Cancelada','Finalizada')")}

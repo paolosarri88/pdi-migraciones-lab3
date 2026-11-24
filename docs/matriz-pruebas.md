@@ -42,3 +42,17 @@ Para trabajo compartido, registrar incidencias con rol, folio, pasos y resultado
 | Inicialización conjunta de scripts, contadores y tabla | `node tests/frontend_smoke.cjs` |
 | Llamado abre ficha y aparece en tótem; tres documentos y «Ver más»; teclado convencional | Comprobación visual local documentada en `verificacion-gcp.md` |
 | Cámara y rostro real durante cinco segundos | Implementado; falta recorrido con el equipo físico de presentación |
+
+## Reservas y acciones reversibles
+
+| Caso | Evidencia |
+|---|---|
+| Reserva ciudadana confirmada en un bloque libre; bloqueo de colisión | `test_15_citizen_books_confirmed_slot_directly` |
+| Aceptación deshecha restaura revisión; rechazo deshecho restaura expediente; incorporación deshecha conserva archivo archivado | `test_30_undo_restores_document_and_terminal_state` |
+| Resolución sin observación, solo con requisitos aceptados; certificado privado y condicionado al estado | `test_31_certificate_requires_all_active_requirements` |
+| Visitante sin cita obtiene turno sin RUN; copia privada; vinculación por funcionario que atiende | `test_32_walkin_receives_private_provisional_turn` |
+| Cita prevista no aparece en fila antes del ingreso | `test_33_expected_appointment_is_not_queue_until_arrival` |
+| Una anotación duplicada de asignación puede deshacerse aunque no cambiase el responsable | `test_34_duplicate_assignment_note_can_be_undone` |
+| Chat en desarrollo abre y se mueve; bloque reservado confirmado; Ver menos al final; prefijo CITA fijo y teclado numérico | Revisión visual en copia local aislada |
+
+La confirmación manual de citas y la programación por funcionario de versiones anteriores fueron sustituidas por la reserva directa del ciudadano. Las pruebas se actualizaron para exigir el flujo vigente, sin volver a habilitar esas funciones antiguas.

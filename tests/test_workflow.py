@@ -71,21 +71,19 @@ class WorkflowTests(unittest.TestCase):
         after=c.get('/api/notifications').json['items']
         self.assertEqual({n['id'] for n in items if n.get('action_required')},{n['id'] for n in after if n.get('action_required')})
 
-    def test_15_citizen_requests_appointment_then_staff_schedules(self):
-        c,h=self.login();staff,hs=self.login('funcionario@demo.pdi.cl','Funcionario2026!')
-        self.assertEqual(c.post('/api/requests/7/appointment-request',json={},headers=h).status_code,404)
-        self.assertEqual(c.post('/api/requests/4/appointment-request',json={},headers=h).status_code,409)
-        self.assertEqual(c.post('/api/requests/6/appointment-request',json={'reason':'Orientación sobre los antecedentes de prueba.'},headers=h).status_code,201)
-        self.assertEqual(c.post('/api/requests/6/appointment-request',json={},headers=h).status_code,409)
-        self.assertEqual(c.get('/api/requests/6').json['request']['appointment_requested'],1)
-        date=c.get('/api/bootstrap').json['today']
-        booked=staff.post('/api/appointments',json={'request_id':6,'date':date,'time':'15:30','reason':'Orientación de prueba'},headers=hs)
-        self.assertEqual(booked.status_code,201)
-        self.assertEqual(c.get('/api/requests/6').json['request']['appointment_requested'],0)
-        appt=next(a for a in c.get('/api/appointments').json['items'] if a['request_id']==6)
-        self.assertTrue(any(n['target']==f"/citas?cita={appt['id']}" for n in c.get('/api/notifications').json['items']))
-        self.assertEqual(c.patch(f"/api/appointments/{appt['id']}",json={'action':'confirm'},headers=h).status_code,200)
-        self.assertFalse(any(n['target']==f"/citas?cita={appt['id']}" for n in c.get('/api/notifications').json['items']))
+    def test_15_citizen_books_confirmed_slot_directly(self):
+        from datetime import date,timedelta
+        citizen,h=self.login();staff,hs=self.login('funcionario@demo.pdi.cl','Funcionario2026!')
+        day=date.fromisoformat(citizen.get('/api/bootstrap').json['today'])+timedelta(days=1)
+        while day.weekday()>4:day+=timedelta(days=1)
+        available=citizen.get('/api/appointment-slots?date='+str(day)).json['slots'];self.assertTrue(available)
+        booked=citizen.post('/api/appointments/book',json={'date':str(day),'time':available[0]},headers=h)
+        self.assertEqual(booked.status_code,201);self.assertEqual(booked.json['status'],'Confirmada')
+        self.assertRegex(booked.json['code'],r'^CITA-\d+$')
+        self.assertNotIn(available[0],citizen.get('/api/appointment-slots?date='+str(day)).json['slots'])
+        self.assertEqual(staff.post('/api/appointments',json={},headers=hs).status_code,410)
+        other,ho=self.login('persona2@demo.pdi.cl','Ciudadano2026!')
+        self.assertEqual(other.post('/api/appointments/book',json={'date':str(day),'time':available[0]},headers=ho).status_code,409)
 
     def test_16_document_examples_and_help(self):
         c=portal.app.test_client()

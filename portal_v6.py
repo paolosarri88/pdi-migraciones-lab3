@@ -61,16 +61,19 @@ def install(ctx):
             db().execute("UPDATE appointments SET status='Finalizada' WHERE id=?",(aid,));db().execute('UPDATE visits SET finished=? WHERE appointment_id=?',(now(),aid))
         else:return fail('Acción no válida.')
         if a['request_id']:event(a['request_id'],'Atención iniciada' if action!='finish' else 'Atención finalizada',desk+' · '+g.user['name'])
-        return jsonify(ok=True,user_id=a['user_id'],desk=desk)
+        return jsonify(ok=True,user_id=a['user_id'],reception_id=aid,desk=desk)
 
     @app.get('/api/reception/board')
     def reception_board():
-        items=rows("SELECT v.ticket,a.desk,u.name as owner_name FROM appointments a JOIN visits v ON v.appointment_id=a.id JOIN users u ON u.id=a.user_id WHERE a.status='En atención' AND a.serving_by IS NOT NULL ORDER BY v.started DESC")
+        items=rows("SELECT v.ticket,a.desk,COALESCE(u.name,'Visitante sin cita') as owner_name FROM appointments a JOIN visits v ON v.appointment_id=a.id LEFT JOIN users u ON u.id=a.user_id WHERE a.status='En atención' AND a.serving_by IS NOT NULL ORDER BY v.started DESC")
         return jsonify(items=items)
 
     @app.post('/api/reception/identify')
     def identify():
         data=request.get_json(silent=True) or {};identifier=str(data.get('identifier','')).strip().upper()
+        if data.get('walk_in') is True:
+            token=secrets.token_urlsafe(32);session['reception']={'token':token,'uid':None,'aid':None,'until':time.time()+900}
+            return jsonify(token=token,registered=False)
         if re.fullmatch(r'\d{7,8}-[0-9K]',identifier):
             u=one("SELECT id FROM users WHERE demo_run=? AND role='citizen' AND active=1",(identifier.replace('-',''),))
             if not u:return fail('RUN no encontrado. Acércate al mesón de atención.',404)
@@ -78,7 +81,7 @@ def install(ctx):
             if a and a['status']=='Pendiente de confirmación':return fail('Confirma tu cita en el portal o solicita ayuda en el mesón.',409)
             uid=u['id']
         elif re.fullmatch(r'CITA-[0-9A-F]{4,12}',identifier):
-            a=one('SELECT * FROM appointments WHERE code=?',(identifier,))
+            a=one('SELECT * FROM appointments WHERE code=? OR id IN (SELECT appointment_id FROM appointment_code_aliases WHERE code=?)',(identifier,identifier))
             if not a or a['date']!=now()[:10] or a['status'] not in ('Confirmada','Presente','En atención'):return fail('El código no corresponde a una cita confirmada para hoy.',409)
             uid=a['user_id']
         else:return fail('Ingresa RUN sin puntos y con guion, o código CITA-XXXX.')
@@ -105,8 +108,9 @@ def install(ctx):
         identification=image_payload(d,'identification',5*1024*1024,True);face=image_payload(d,'face',500*1024)
         if not identification or not face or face[1]!='image/jpeg':return fail('Adjunta la copia del documento (PDF/JPG/PNG, hasta 5 MB) y una captura de cámara (hasta 500 KB).')
         uid=grant['uid']
-        if os.environ.get('DB_HOST'):db().execute('SELECT id FROM users WHERE id=? FOR UPDATE',(uid,))
-        else:db().execute('UPDATE users SET active=active WHERE id=?',(uid,))
+        if uid:
+            if os.environ.get('DB_HOST'):db().execute('SELECT id FROM users WHERE id=? FOR UPDATE',(uid,))
+            else:db().execute('UPDATE users SET active=active WHERE id=?',(uid,))
         if one("SELECT id FROM appointments WHERE user_id=? AND status IN ('Presente','En atención')",(uid,)):return fail('Tu llegada ya está registrada. Acércate al mesón si necesitas ayuda.',409)
         aid=grant['aid']
         if aid:
@@ -174,7 +178,7 @@ def install(ctx):
     def workload():
         waiting=one("SELECT COUNT(*) as total FROM appointments WHERE status='Presente'")['total']
         online=one("SELECT COUNT(*) as total FROM requests r WHERE r.channel='online' AND r.status NOT IN ('Resuelta','Cerrada','Rechazada') AND (r.appointment_requested=1 OR r.status IN ('Recibida','En revisión') OR EXISTS(SELECT 1 FROM documents d WHERE d.request_id=r.id AND d.superseded=0 AND d.review_status='En revisión'))")['total']
-        active=one("SELECT a.id,a.user_id,u.name as owner_name,a.desk FROM appointments a JOIN users u ON u.id=a.user_id WHERE a.status='En atención' AND a.serving_by=?",(g.user['id'],))
+        active=one("SELECT a.id,a.user_id,COALESCE(u.name,'Visitante sin cita') as owner_name,a.desk FROM appointments a LEFT JOIN users u ON u.id=a.user_id WHERE a.status='En atención' AND a.serving_by=?",(g.user['id'],))
         return jsonify(waiting=waiting,online=online,active=active)
 
     @app.post('/api/requests/<int:rid>/reception-document')
