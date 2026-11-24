@@ -10,6 +10,10 @@ La misma URL se puede abrir desde otro computador sin clonar este repositorio. [
 
 La configuración cloud ejecuta la web y la API en Cloud Run, los registros en Cloud SQL PostgreSQL y los documentos en Cloud Storage privado. Terraform y el script de despliegue están incluidos. Consulta [la guía de despliegue](docs/despliegue-gcp.md) para replicar la infraestructura, conocer los costos y cerrar los recursos después de la evaluación.
 
+## Personas de demostración
+
+Las cuentas ciudadanas precargadas usan personajes de GTA y conservan sus RUN/correos/claves. [Mapa de cuentas, fuentes y datos inventados](docs/personajes-gta.md). El tótem incluye carga de identificación y captura con detección local de rostro; no verifica identidad.
+
 ## Atención online y presencial
 
 La bandeja online está separada de «Atención presencial». «Personas» permite buscar una ficha, revisar todas sus solicitudes, registrar una llegada y crear un trámite en nombre del ciudadano. Los documentos adicionales, reaperturas y rectificaciones conservan trazabilidad. [Flujo y límites de la PoC](docs/flujo-atencion.md).

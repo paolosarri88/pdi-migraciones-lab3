@@ -3,7 +3,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PDI_DATA_DIR=/tmp/pdi-data
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt && useradd --create-home portal
-COPY app.py persistence.py workflow.py document_rules.py document_ai.py portal_v4.py portal_v5.py ./
+COPY app.py persistence.py workflow.py document_rules.py document_ai.py portal_v4.py portal_v5.py portal_v6.py demo_characters.py ./
 COPY static ./static
 COPY prompts ./prompts
 USER portal

@@ -31,3 +31,14 @@ Para trabajo compartido, registrar incidencias con rol, folio, pasos y resultado
 | Llegada sin cita | Sin doble turno; iniciar/finalizar aunque no se asociara expediente | Prueba 23 |
 | Reutilizar versión | Mismo ciudadano y tipo, sin heredar aceptación, referencia de versión, bloqueo por vencimiento | `test_24_document_reuse_is_owned_versioned_and_pending` |
 | Flechas, colores y diálogo | Sin filtro global; orden de pendientes; cerrar con equis o clic fuera | Implementado; revisión visual manual pendiente |
+
+## Ampliación: sesión presencial y edición directa
+
+| Recorrido | Evidencia automatizada / manual |
+|---|---|
+| Una atención por funcionario, toma ajena impedida, orden flexible | `test_25_attention_exclusive_and_owned` |
+| Autorización de recepción, no reutilización de token, captura privada y copia al expediente | `test_26_reception_grant_and_private_files` |
+| Lápiz/papelera, auditoría del original, corrección explícita de estado y cierre protegido | `test_27_history_edit_delete_and_closed_guard` |
+| Inicialización conjunta de scripts, contadores y tabla | `node tests/frontend_smoke.cjs` |
+| Llamado abre ficha y aparece en tótem; tres documentos y «Ver más»; teclado convencional | Comprobación visual local documentada en `verificacion-gcp.md` |
+| Cámara y rostro real durante cinco segundos | Implementado; falta recorrido con el equipo físico de presentación |

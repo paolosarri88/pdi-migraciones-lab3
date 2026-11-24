@@ -175,7 +175,7 @@ class WorkflowTests(unittest.TestCase):
         people=staff.get('/api/institutional/people').json['items']
         self.assertTrue(any(p['run']=='00000001-9' for p in people))
         geop=staff.post('/api/simulators/gepol/query',json={'run':'00000001-9'},headers=hs)
-        civil=staff.post('/api/simulators/registro-civil/query',json={'name':'María Fernanda'},headers=hs)
+        civil=staff.post('/api/simulators/registro-civil/query',json={'name':'Michael De Santa'},headers=hs)
         self.assertEqual(geop.status_code,200);self.assertEqual(civil.status_code,200)
         self.assertIn('migration_status',geop.json['items'][0]);self.assertNotIn('migration_status',civil.json['items'][0])
         self.assertEqual(staff.post('/api/simulators/gepol/query',json={'run':'00.000.001-9'},headers=hs).status_code,400)

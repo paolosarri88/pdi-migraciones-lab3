@@ -233,8 +233,9 @@ def create_request():
 def detail(rid):
     r=request_record(rid)
     if not r:return fail('Solicitud no encontrada.',404)
+    r['assigned_name']=(one('SELECT name FROM users WHERE id=?',(r['assigned_to'],)) or {}).get('name')
     r['details']=json.loads(r['details'] or '{}');r['ai']=json.loads(r['ai']) if r['ai'] else None
-    events=rows('SELECT * FROM events WHERE request_id=?'+(" AND visibility='public'" if g.user['role']=='citizen' else '')+' ORDER BY id DESC',(rid,))
+    events=rows('SELECT * FROM events WHERE deleted_at IS NULL AND request_id=?'+(" AND visibility='public'" if g.user['role']=='citizen' else '')+' ORDER BY id DESC',(rid,))
     docs=rows('SELECT * FROM documents WHERE request_id=? ORDER BY id DESC',(rid,))
     if g.user['role']=='citizen':
         r['ai']=None
@@ -355,6 +356,7 @@ def schedule():
 @auth()
 def appointment_action(aid):
     a=one('SELECT * FROM appointments WHERE id=?',(aid,));d=request.get_json(silent=True) or {};action=d.get('action')
+    if action in ('start','finish'):return app.view_functions['attention'](aid)
     if not a or (g.user['role']=='citizen' and a['user_id']!=g.user['id']):return fail('Cita no encontrada.',404)
     if action=='confirm' and a['status']=='Pendiente de confirmación':status='Confirmada'
     elif action=='cancel' and a['status'] in ('Pendiente de confirmación','Confirmada'):
@@ -468,4 +470,6 @@ from portal_v4 import install as install_v4
 install_v4(globals())
 from portal_v5 import install as install_v5
 install_v5(globals())
+from portal_v6 import install as install_v6
+install_v6(globals())
 if __name__=='__main__':app.run(host=os.environ.get('HOST','127.0.0.1'),port=int(os.environ.get('PORT','8080')),debug=False)

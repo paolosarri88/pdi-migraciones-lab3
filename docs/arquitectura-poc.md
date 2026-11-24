@@ -16,6 +16,6 @@ La web y la API comparten un servicio Cloud Run. PostgreSQL conserva personas fi
 
 Terraform crea la infraestructura GCP y sus permisos. Cloud Build construye la imagen; Artifact Registry la conserva. Cloud Run usa su identidad de servicio para acceder a SQL, Storage y Secret Manager. Las claves no viajan al navegador ni se incorporan al repositorio.
 
-La flecha hacia Azure está discontinua porque el código y la conexión opcional existen, pero falta acceso a un recurso vigente y evidencia de inferencia real. Cuando se habilite, los archivos nuevos de prueba se enviarán al modelo visual; el resultado afectará el estado documental y quedará auditado. La asistencia de texto del funcionario es una función distinta. Ninguna resuelve el expediente completo automáticamente.
+La flecha hacia Azure está discontinua porque el código y la conexión opcional existen, pero falta acceso a un recurso vigente y evidencia de inferencia real. Cuando se habilite, los archivos nuevos de prueba se enviarán al modelo visual; el resultado quedará como propuesta auditada; solo el funcionario cambia el estado documental. La asistencia de texto del funcionario es una función distinta. Ninguna resuelve el expediente completo automáticamente.
 
 GEPOL y Registro Civil son registros simulados dentro de la misma aplicación; no representan conexiones reales a redes institucionales. Esta PoC no despliega la VPN, WAF, alta disponibilidad ni ambientes DEV/QA separados de una arquitectura productiva. La persistencia y el despliegue sí son servicios reales de GCP.

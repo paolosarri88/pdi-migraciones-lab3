@@ -47,3 +47,15 @@ Al reportar un problema, guardar: cuenta/rol ficticio, folio, sección, pasos, r
 5. En un expediente destinado a pruebas, registra rechazo y luego utiliza «Reabrir expediente». La historia debe explicar la reapertura; el selector normal no debe permitir saltarse ese paso. Rectifica una anotación de prueba y verifica que quede conservada en el apartado de rectificaciones.
 6. Con un documento aceptado en una solicitud, crea otra del mismo ciudadano y tipo compatible. «Usar documento existente» debe incorporar una referencia pendiente de nueva revisión. Un documento con vencimiento pasado no debe ofrecerse ni aceptarse para reutilización.
 7. Abre «Calendario y recordatorios»: prueba cerrar con la equis, Escape y haciendo clic fuera del recuadro. En documentos solo deben quedar las flechas individuales, sin filtro «Mostrar» ni botones globales.
+
+## Recorrido de recepción con cámara
+
+1. Abre `/totem` en otra ventana. En la bienvenida, toca para comenzar. El teclado tiene distribución QWERTY y números arriba, ya que permite RUN o códigos alfanuméricos.
+2. Ingresa un RUN de las cuentas precargadas (consulta los accesos disponibles en login). Si hay una cita para hoy, debe estar confirmada. Un RUN sin cita para hoy permite una llegada espontánea. Si ya está en la fila, muestra el turno existente.
+3. Carga una identificación ficticia PDF/JPG/PNG de hasta 5 MB. El lector físico se representa visualmente; no está conectado a hardware.
+4. Permite la cámara y mantén un único rostro visible cinco segundos. Si falta permiso/cámara, reintenta o acude al mesón. No existe botón que simule una detección exitosa ni comparación con la foto del documento.
+5. Aparece el turno. Entra como funcionario en otra ventana, abre «Fila presencial» y usa «Llamar e iniciar». Se abre la ficha, el turno se anuncia con módulo y no se puede iniciar otra atención hasta finalizar esta.
+6. La ficha muestra foto y copia de identificación para contraste visual. Crea una solicitud presencial; en Documento de identidad, usa «Incorporar identificación del tótem» y registra tu decisión después de revisarla.
+7. Finaliza la atención desde la ficha o la fila. El tótem ya no solicita registrar la salida.
+
+Para la presentación, comprobar la cámara en el navegador y computador definitivos antes de comenzar. No es una función de Foundry: la detección de rostro se ejecuta en el navegador y no acredita identidad.

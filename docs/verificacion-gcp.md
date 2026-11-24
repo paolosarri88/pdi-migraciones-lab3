@@ -75,3 +75,17 @@ Actualización del 23 de noviembre de 2026 (Santiago). Imagen final `portal:2026
 - Sintaxis JavaScript y diferencias de archivos comprobadas. La comprobación visual interactiva en navegador sigue sin completarse; no se presenta una captura antigua como evidencia de esta versión. El cierre por clic exterior forma parte de la revisión manual indicada en la guía.
 
 La IA real de Foundry sigue pendiente. Las recomendaciones no cambian decisiones humanas. No se añadieron SMS, lectura automática de correo, escáner de cédula ni biometría.
+
+## Actualización del 24 de noviembre: fila, capturas y personajes
+
+Imagen publicada: `portal:20261124032743` (etiqueta UTC). Se mantiene la misma URL y la persistencia compartida.
+
+- 24 pruebas aprobadas en SQLite (1,645 segundos) y 24 en PostgreSQL temporal aislado (579,106 segundos). Incluyen atención exclusiva por funcionario, rechazo de toma/finalización ajena, flexibilidad del orden de llamada, autorización temporal de recepción, consumo del token, archivos privados, corrección/eliminación lógica de eventos y bloqueo del cambio de estado de un expediente cerrado sin reapertura.
+- La incorporación de la identificación del tótem como documento pendiente se comprobó además en la ejecución local final. No se hereda una aceptación de identidad ni se acepta automáticamente por detectar un rostro.
+- `node tests/frontend_smoke.cjs`: carga conjunta de scripts, contadores, color rojo de «Cerrada», enlaces de folio, fecha e historial escapado. Sintaxis y diferencias de archivos comprobadas.
+- Comprobación visual interactiva en copia local aislada: ingreso de funcionario, menú con contadores, expediente sin panel de antecedentes declarados, editor junto a una acción, ficha, lista de tres documentos y despliegue «Ver más», llamado de Franklin Clinton con apertura directa de su ficha y sesión activa en Módulo 2; tótem mostrando ese turno llamado, bienvenida y teclado QWERTY con fila numérica.
+- La cámara física y la inferencia sobre un rostro real no se ejecutaron durante esta comprobación. El flujo usa `getUserMedia`, MediaPipe Tasks Vision 0.10.21 y BlazeFace servidos localmente. Falta probar el permiso y recorrido con la cámara del equipo que se usará en la presentación. No se declara biometría ni verificación de identidad.
+- HTTPS público: nuevas rutas y recursos, nombres temáticos, contadores, tablero, bibliotecas protegidas, consultas con campos distintos en GEPOL/Registro Civil y tipo MIME del WASM comprobados. Las consultas generan auditoría; no se modificaron expedientes de la demostración mediante este control.
+- Se preservan personas nuevas, cuentas de funcionario/administrador y expedientes/archivos existentes. La migración temática solo cambia las identidades precargadas. Fuentes y escenarios inventados en `personajes-gta.md`.
+
+La actualización automática de la tabla evita reemplazar un contenido idéntico y descarta una respuesta de sondeo si se cambió de sección. La IA documental real de Foundry sigue pendiente de acceso Azure.

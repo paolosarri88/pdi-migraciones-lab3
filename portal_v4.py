@@ -32,7 +32,7 @@ def install(ctx):
     @app.get('/api/workboard')
     @auth(staff=True)
     def workboard():
-        queue=rows("SELECT a.*,u.name as owner_name,r.folio,v.ticket,v.entered,v.started FROM appointments a JOIN users u ON u.id=a.user_id LEFT JOIN requests r ON r.id=a.request_id LEFT JOIN visits v ON v.appointment_id=a.id WHERE a.status IN ('Presente','En atención') ORDER BY CASE WHEN a.status='En atención' THEN 0 ELSE 1 END,v.entered,a.id")
+        queue=rows("SELECT a.*,u.name as owner_name,r.folio,v.ticket,v.entered,v.started,s.name as serving_name FROM appointments a JOIN users u ON u.id=a.user_id LEFT JOIN requests r ON r.id=a.request_id LEFT JOIN visits v ON v.appointment_id=a.id LEFT JOIN users s ON s.id=a.serving_by WHERE a.status IN ('Presente','En atención') ORDER BY CASE WHEN a.status='En atención' THEN 0 ELSE 1 END,v.entered,a.id")
         cases=rows("SELECT r.*,u.name as owner_name FROM requests r JOIN users u ON u.id=r.user_id WHERE r.status NOT IN ('Resuelta','Cerrada','Rechazada') ORDER BY r.created,r.id")
         tasks=[]
         active_citations={a['request_id'] for a in rows("SELECT request_id FROM appointments WHERE status NOT IN ('Cancelada','Finalizada')")}
@@ -62,15 +62,15 @@ def install(ctx):
         if run and not re.fullmatch(r'\d{7,8}-[0-9kK]',run):return fail('Formato de RUN: 12345678-9, sin puntos y con guion.')
         if not any((run,name,passport)):return fail('Ingresa RUN, nombre o pasaporte.')
         def norm(v):return ''.join(c for c in unicodedata.normalize('NFD',v.lower()) if not unicodedata.combining(c))
-        records=rows("SELECT u.id,u.name,u.demo_run,u.nationality,i.identity_status,i.migration_status,i.entry_date,i.border,i.notes FROM users u LEFT JOIN institutional i ON i.user_id=u.id WHERE u.role='citizen' AND u.active=1 ORDER BY u.name")
+        records=rows("SELECT u.id,u.name,u.demo_run,u.nationality,u.alias,u.birth_info,u.birthplace,i.criminal_status,i.criminal_notes,i.identity_status,i.migration_status,i.entry_date,i.border,i.notes FROM users u LEFT JOIN institutional i ON i.user_id=u.id WHERE u.role='citizen' AND u.active=1 ORDER BY u.name")
         found=[]
         for u in records:
             pr=f"PAS-{u['id']:06}"
             if run and u['demo_run']!=run.replace('-','').upper():continue
             if name and norm(name) not in norm(u['name']):continue
             if passport and passport!=pr:continue
-            item={'name':u['name'],'run':format_run(u['demo_run']),'passport':pr,'identity_status':u['identity_status'] or 'Sin registro','nationality':u['nationality'] or 'No informada'}
-            if source=='gepol':item.update(migration_status=u['migration_status'] or 'Sin registro',entry_date=u['entry_date'],border=u['border'] or 'No informado',notes=u['notes'] or '')
+            item={'name':u['name'],'run':format_run(u['demo_run']),'passport':pr,'identity_status':u['identity_status'] or 'Sin registro','nationality':u['nationality'] or 'No informada','alias':u['alias'] or 'Sin alias','birth_info':u['birth_info'] or 'No informado','birthplace':u['birthplace'] or 'No informado'}
+            if source=='gepol':item.update(migration_status=u['migration_status'] or 'Sin registro',entry_date=u['entry_date'],border=u['border'] or 'No informado',notes=u['notes'] or '',criminal_status=u['criminal_status'] or 'Sin información',criminal_notes=u['criminal_notes'] or '')
             found.append(item)
         db().execute('INSERT INTO query_log(user_id,person_code,source,result,created) VALUES(?,?,?,?,?)',(g.user['id'],run or passport or name[:100],'GEPOL' if source=='gepol' else 'Registro Civil',f'{len(found)} resultado(s)',ctx['now']()))
         return jsonify(items=found,simulated=True)

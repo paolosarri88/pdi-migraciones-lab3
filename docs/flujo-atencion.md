@@ -74,3 +74,27 @@ La ficha ofrece una biblioteca lógica de documentos: los objetos permanecen pri
 La nueva solicitud crea una referencia a la versión del archivo (`source_document_id`) y conserva su propio estado «En revisión», sin copiar el funcionario ni la aceptación anterior. No duplica el objeto de Storage. Una vigencia desconocida se indica como pendiente de comprobación; no se inventa una duración universal. El funcionario puede registrar fecha de vencimiento con motivo antes del cierre. Un vencimiento conocido impide volver a reutilizar esa versión.
 
 Este es el diseño de la PoC, no una afirmación sobre requisitos jurídicos o procedimientos actuales de organismos reales. En producción se necesitarían reglas por trámite, verificación de identidad, consentimiento/base de tratamiento, retención, activación de cuentas y controles de concurrencia más completos.
+
+## Actualización del 24 de noviembre: fila y tótem
+
+«Fila presencial» aparece primero en el menú y cuenta solo las personas en espera. «Bandeja de solicitudes» cuenta expedientes online activos que requieren trabajo (revisión, resolución o coordinación), excluyendo finalizados y casos solo a la espera de antecedentes. Los contadores se actualizan cada cinco segundos aunque el funcionario esté en otra sección.
+
+«Llamar e iniciar» asigna la atención al funcionario y abre la ficha de la persona. El servidor serializa esa asignación y un índice impide dos atenciones simultáneas del mismo funcionario. Otro funcionario no puede tomar o finalizar una atención asignada. Se puede llamar fuera del orden de llegada si alguien no responde. Las atenciones antiguas que no tenían responsable aparecen con «Retomar atención»; se conservan sin inventar quién las atendió.
+
+El módulo se asigna de forma estable a partir del identificador de la cuenta funcionaria (por ejemplo, Javier usa «Módulo 2»). En este prototipo no se administra un inventario físico de puestos.
+
+Tótem: bienvenida táctil → RUN o código de cita → copia PDF/JPG/PNG del documento → cámara → un rostro visible durante cinco segundos continuos → turno. Si desaparece el rostro o aparece más de uno, el contador reinicia. La detección se ejecuta localmente en el navegador con MediaPipe; no compara identidades ni acredita presencia de una persona viva. La cámara se detiene al salir del paso. Si no hay cámara o permiso, se ofrece reintentar o acudir al mesón; no se inventa una captura satisfactoria.
+
+El lector físico se representa en pantalla; para esta versión se carga un archivo. Las copias y fotografías se guardan privadas con permiso de lectura solo para funcionarios. La ficha muestra las capturas, y «Incorporar identificación del tótem» añade la copia al expediente pendiente de revisión humana. El servidor usa una autorización de recepción de quince minutos y la consume tras registrar la llegada. Impide duplicar el ingreso al reutilizarla.
+
+La bienvenida y la pantalla de turno muestran los turnos llamados con nombre y módulo; no exponen RUN, correo, documentos ni fotografías. El tablero se actualiza cada tres segundos. Se retiraron del tótem «Registrar salida» y «Consultar turno» como opciones separadas. Reingresar un RUN/código ya recibido muestra su turno. Las APIs anteriores se conservan por compatibilidad, pero no se usan para el nuevo recorrido.
+
+## Historial y asignación simplificados
+
+El lápiz y la papelera aparecen junto a cada acción para funcionarios. El lápiz permite corregir título/nota y, de forma explícita, el estado actual; exige motivo. La papelera retira la anotación de la línea temporal, conserva original y motivo en `event_edits`, y no cambia el estado por sí sola. No se muestran las antiguas secciones «Corregir una anotación»/«Anotaciones rectificadas». Un expediente «Cerrada» se presenta en rojo y sigue necesitando reapertura por administración antes de modificar su estado.
+
+La asignación de un expediente muestra el responsable y botones «Tomar revisión»/«Liberar expediente». Identifica quién lo gestiona; no impide consultar a otros funcionarios. Un funcionario no puede apropiarse de una asignación ajena mediante ese botón; administración sí puede reasignar. Es distinta de la exclusividad de una sesión de atención presencial.
+
+La tabla enlaza el folio, incorpora fecha de ingreso y ordena por antigüedad dentro de cada prioridad. El expediente abre directamente los documentos, omitiendo el panel redundante de antecedentes declarados. La ficha muestra tres archivos y permite desplegar el resto. La ayuda documental del funcionario se presenta como criterios de revisión, no como instrucciones para adjuntar del ciudadano.
+
+MediaPipe Tasks Vision 0.10.21 y su modelo BlazeFace se incluyen en `static/vendor/mediapipe`, con licencia. [Documentación oficial del detector](https://developers.google.com/edge/mediapipe/solutions/vision/face_detector?tab=Web). No hay llamada a Azure ni envío de imágenes a Google para esta detección local. La inferencia documental Foundry continúa siendo una función distinta y pendiente de acceso.
