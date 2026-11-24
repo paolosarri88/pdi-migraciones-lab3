@@ -61,3 +61,17 @@ Publicación final: revisión `pdi-portal-00008-6g8`, imagen `portal:20261124014
 - Sintaxis JavaScript y compilación Python verificadas. La revisión visual automática NO pudo completarse: el navegador dejó de responder y su sesión de control expiró. No se presenta una captura anterior como evidencia visual de esta versión.
 
 Rutas publicadas: `/totem`, `/simuladores/gepol` y `/simuladores/registro-civil`. Usan el mismo servicio y datos del laboratorio, con diseños independientes y avisos de simulación. No se conectan a sistemas reales ni leen correos automáticamente. La biometría permanece fuera del flujo definido; la IA real sigue pendiente del acceso Azure descrito previamente.
+
+## Fichas de personas, atención presencial y rectificaciones
+
+Actualización del 23 de noviembre de 2026 (Santiago). Imagen final `portal:20261124024116` (etiqueta UTC), publicada en el mismo servicio Cloud Run.
+
+- 21 pruebas aprobadas con SQLite temporal (1,372 segundos) y 21 con PostgreSQL real en base temporal aislada (460,373 segundos). La normalización final de fechas de vigencia se comprobó además con la ejecución local final.
+- Casos nuevos: alta de persona sin elevación de rol, ficha protegida, solicitud presencial, requisito adicional y cancelación con motivo, bloqueo de cambio normal de una decisión final, reapertura explícita, rectificación conservando el original, llegada sin cita y atención sin expediente asociado.
+- Reutilización: solo versiones aceptadas de la misma persona y tipo; se conserva la referencia al original y el nuevo documento queda pendiente de revisión. Los documentos vencidos se rechazan para reutilización. La biblioteca de otra persona no es accesible al ciudadano.
+- Migraciones aditivas para canal de ingreso, referencia de versión, vigencia y datos de rectificación; tabla de requisitos adicionales. No se borraron expedientes ni anotaciones existentes.
+- HTTPS: recursos de la nueva interfaz, ficha y biblioteca autenticadas, permisos de ciudadano, accesos por rol y simuladores institucionales comprobados. Las consultas institucionales dejan auditoría; esta comprobación no cambió expedientes publicados.
+- Interfaz implementada: documentos siempre visibles y contraídos, pendientes primero, flechas individuales, solicitud/cancelación de otro requisito, colores más visibles, cierre de diálogo con clic exterior y equis; bandeja online separada de atención presencial y ficha de persona.
+- Sintaxis JavaScript y diferencias de archivos comprobadas. La comprobación visual interactiva en navegador sigue sin completarse; no se presenta una captura antigua como evidencia de esta versión. El cierre por clic exterior forma parte de la revisión manual indicada en la guía.
+
+La IA real de Foundry sigue pendiente. Las recomendaciones no cambian decisiones humanas. No se añadieron SMS, lectura automática de correo, escáner de cédula ni biometría.

@@ -251,7 +251,7 @@ def update_request(rid):
     if status not in STATUSES:return fail('Estado no válido.')
     if not note:return fail('Escribe una observación para dejar trazabilidad.')
     if len(note)>3000:return fail('La observación es demasiado extensa.')
-    if r['status']=='Cerrada' and g.user['role']!='admin':return fail('Solo administración puede reabrir un expediente cerrado.',403)
+    if r['status'] in ('Resuelta','Cerrada','Rechazada'):return fail('Utiliza Reabrir expediente e indica el motivo antes de modificar una decisión final.',409)
     if status=='Resuelta' and any(x['status']!='Aceptado' for x in document_groups(r)):return fail('Acepta todos los antecedentes requeridos antes de resolver favorablemente.',409)
     assigned=d.get('assigned_to',r['assigned_to'])
     if assigned and not one("SELECT id FROM users WHERE id=? AND role IN ('staff','admin') AND active=1",(assigned,)):return fail('Funcionario no válido.')
@@ -278,7 +278,7 @@ def upload(rid):
     requirement=REQUIREMENT_ALIASES.get(requirement,requirement)
     origin=str(d.get('origin','portal'))
     origin_note=str(d.get('origin_note','')).strip()[:500]
-    if g.user['role']!='citizen' and (origin!='email' or len(origin_note)<10):return fail('Usa la incorporación por correo e indica su procedencia (al menos 10 caracteres).')
+    if g.user['role']!='citizen' and (origin not in ('email','presencial') or len(origin_note)<10):return fail('Selecciona correo o atención presencial e indica su procedencia (al menos 10 caracteres).')
     if g.user['role']=='citizen':origin='portal';origin_note=''
     groups=document_groups(r)
     allowed=[x['name'] for x in groups]
@@ -366,7 +366,8 @@ def appointment_action(aid):
     elif action=='finish' and g.user['role'] in ('staff','admin') and a['status']=='En atención':
         status='Finalizada';db().execute('UPDATE visits SET finished=? WHERE appointment_id=?',(now(),aid))
     else:return fail('La acción no está disponible para el estado actual.',409)
-    db().execute('UPDATE appointments SET status=? WHERE id=?',(status,aid));event(a['request_id'],one('SELECT status FROM requests WHERE id=?',(a['request_id'],))['status'],f'Cita: {status}.')
+    db().execute('UPDATE appointments SET status=? WHERE id=?',(status,aid))
+    if a['request_id']:event(a['request_id'],one('SELECT status FROM requests WHERE id=?',(a['request_id'],))['status'],f'Cita: {status}.')
     return jsonify(ok=True)
 
 @app.post('/api/kiosk')
@@ -465,4 +466,6 @@ from workflow import install, document_groups, document_overview, active_notices
 install(globals())
 from portal_v4 import install as install_v4
 install_v4(globals())
+from portal_v5 import install as install_v5
+install_v5(globals())
 if __name__=='__main__':app.run(host=os.environ.get('HOST','127.0.0.1'),port=int(os.environ.get('PORT','8080')),debug=False)

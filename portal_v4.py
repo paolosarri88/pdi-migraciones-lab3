@@ -44,7 +44,7 @@ def install(ctx):
             elif ctx['document_overview'](r,docs)['display_status']=='Requiere antecedentes':action='Esperar antecedentes';priority=4
             elif r['status']=='Cita programada' and r['id'] in active_citations:action='Atención programada';priority=3
             else:action='Resolver expediente';priority=2
-            tasks.append({'id':r['id'],'folio':r['folio'],'owner_name':r['owner_name'],'action':action,'priority':priority,'pending_documents':count})
+            tasks.append({'id':r['id'],'folio':r['folio'],'owner_name':r['owner_name'],'channel':r.get('channel','online'),'action':action,'priority':priority,'pending_documents':count})
         tasks.sort(key=lambda t:t['priority'])
         return jsonify(queue=queue,tasks=tasks,priority_policy='Atención en curso, luego personas en espera por orden de llegada; después revisión de expedientes.')
 

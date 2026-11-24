@@ -20,3 +20,14 @@
 Las pruebas se ejecutan con SQLite temporal o una base PostgreSQL temporal con prefijo `pdi_validation_`; no utilizan la base publicada para las mutaciones de prueba. La evidencia fechada se conserva en `verificacion-gcp.md`. Las verificaciones mediante respuestas simuladas de proveedor comprueban el código, no la precisión de un modelo real.
 
 Para trabajo compartido, registrar incidencias con rol, folio, pasos y resultado esperado/observado. Acordar quién usa cada expediente y revisar los cambios antes de integrarlos; ninguno de estos frentes está asignado a una persona específica.
+
+## Ampliación: ficha personal y correcciones
+
+| Recorrido | Comportamiento esperado | Evidencia |
+|---|---|---|
+| Persona y expediente presencial | Buscar ficha; registrar persona con rol ciudadano; crear solicitud fuera de bandeja online | `test_23_person_presential_additional_and_rectification` |
+| Pedir/cancelar documento adicional | Motivo obligatorio, sin duplicados activos, aviso y trazabilidad | Prueba 23 |
+| Reapertura y corrección | Selector normal bloqueado tras decisión final; reapertura con motivo; original rectificado conservado | Prueba 23 |
+| Llegada sin cita | Sin doble turno; iniciar/finalizar aunque no se asociara expediente | Prueba 23 |
+| Reutilizar versión | Mismo ciudadano y tipo, sin heredar aceptación, referencia de versión, bloqueo por vencimiento | `test_24_document_reuse_is_owned_versioned_and_pending` |
+| Flechas, colores y diálogo | Sin filtro global; orden de pendientes; cerrar con equis o clic fuera | Implementado; revisión visual manual pendiente |

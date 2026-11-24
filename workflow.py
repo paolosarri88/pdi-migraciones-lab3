@@ -13,10 +13,13 @@ def document_groups(record, docs=None):
     if docs is None:docs=ctx['rows']('SELECT * FROM documents WHERE request_id=? ORDER BY id DESC',(record['id'],))
     names=next((x['docs'] for x in ctx['CATALOG'] if x['id']==record['type_id']),[])
     groups=[]
+    extras=ctx['rows']('SELECT id,name,reason FROM extra_requirements WHERE request_id=? AND active=1 ORDER BY id',(record['id'],))
+    names=list(names)+[x['name'] for x in extras if x['name'] not in names]
     for name in names:
         matches=[d for d in docs if d.get('requirement')==name and not d.get('superseded')]
         current=max(matches,key=lambda d:d['id']) if matches else None
-        groups.append({'name':name,'status':current['review_status'] if current else 'Falta documento','document':current})
+        extra=next((x for x in extras if x['name']==name),None)
+        groups.append({'name':name,'status':current['review_status'] if current else 'Falta documento','document':current,'extra_id':extra['id'] if extra else None,'reason':extra['reason'] if extra else ''})
     return groups
 
 def document_overview(record,docs=None):

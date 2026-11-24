@@ -37,3 +37,13 @@ Sin configuración, la aplicación permite la revisión manual. Un botón deshab
 ## Registro de incidencias
 
 Al reportar un problema, guardar: cuenta/rol ficticio, folio, sección, pasos, resultado esperado, resultado observado y captura. Distinguir errores de permisos, errores de estado y preferencias de diseño. Evitar probar ambos al mismo tiempo sobre el mismo expediente.
+
+## Probar la ficha y las correcciones
+
+1. Entra como funcionario y abre «Personas». Busca a María por nombre o `00000001-9`; revisa sus solicitudes y enlaces institucionales.
+2. Para evitar modificar expedientes ya usados en otra prueba, registra una persona nueva con correo ficticio, clave inicial y RUN asignado. Desde su ficha crea una solicitud presencial.
+3. Incorpora una copia indicando «Presentado presencialmente» y registra después tu decisión documental. Pide otro tipo con «Solicitar otro documento» y comprueba el aviso entrando como ese ciudadano. Cancela el requisito adicional con motivo para probar la corrección.
+4. Registra su llegada sin cita en la ficha y abre «Atención presencial». Inicia y finaliza su atención. La bandeja online no debe mostrar la solicitud presencial.
+5. En un expediente destinado a pruebas, registra rechazo y luego utiliza «Reabrir expediente». La historia debe explicar la reapertura; el selector normal no debe permitir saltarse ese paso. Rectifica una anotación de prueba y verifica que quede conservada en el apartado de rectificaciones.
+6. Con un documento aceptado en una solicitud, crea otra del mismo ciudadano y tipo compatible. «Usar documento existente» debe incorporar una referencia pendiente de nueva revisión. Un documento con vencimiento pasado no debe ofrecerse ni aceptarse para reutilización.
+7. Abre «Calendario y recordatorios»: prueba cerrar con la equis, Escape y haciendo clic fuera del recuadro. En documentos solo deben quedar las flechas individuales, sin filtro «Mostrar» ni botones globales.

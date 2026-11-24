@@ -195,3 +195,53 @@ class WorkflowTests(unittest.TestCase):
         docs=staff.get('/api/requests/1').json['documents']
         current=next(d for d in docs if d['id']==result.json['id'])
         self.assertEqual(current['origin'],'email');self.assertIn('correo institucional',current['origin_note'])
+
+    def test_23_person_presential_additional_and_rectification(self):
+        staff,h=self.login('funcionario@demo.pdi.cl','Funcionario2026!');citizen,hc=self.login()
+        self.assertEqual(citizen.get('/api/people/1').status_code,403)
+        made=staff.post('/api/people',json={'name':'Persona Presencial','email':'presencial-v5@example.test','password':'PruebaPresencial2026!','role':'admin','phone':'1234'},headers=h)
+        self.assertEqual(made.status_code,201);uid=made.json['id']
+        person=staff.get(f'/api/people/{uid}').json['person'];self.assertEqual(person['phone'],'1234')
+        created=staff.post(f'/api/people/{uid}/requests',json={'type_id':'domicilio','description':'Atención presencial para registrar y revisar antecedentes.'},headers=h)
+        self.assertEqual(created.status_code,201);rid=created.json['id']
+        self.assertEqual(staff.get(f'/api/requests/{rid}').json['request']['channel'],'presencial')
+        extra_name=next(n for c in portal.CATALOG for n in c['docs'] if n not in next(c['docs'] for c in portal.CATALOG if c['id']=='domicilio'))
+        payload={'name':extra_name,'reason':'Se requiere este antecedente complementario para revisar el caso.'}
+        self.assertEqual(citizen.post(f'/api/requests/{rid}/requirements',json=payload,headers=hc).status_code,403)
+        extra=staff.post(f'/api/requests/{rid}/requirements',json=payload,headers=h);self.assertEqual(extra.status_code,201)
+        self.assertEqual(staff.post(f'/api/requests/{rid}/requirements',json=payload,headers=h).status_code,409)
+        self.assertIn(extra_name,[x['name'] for x in staff.get(f'/api/requests/{rid}').json['requirements']])
+        self.assertEqual(staff.post(f'/api/requests/{rid}/requirements/{extra.json["id"]}/cancel',json={'reason':'Fue solicitado por error durante la revisión.'},headers=h).status_code,200)
+        self.assertNotIn(extra_name,[x['name'] for x in staff.get(f'/api/requests/{rid}').json['requirements']])
+        self.assertEqual(staff.patch(f'/api/requests/{rid}',json={'status':'Rechazada','note':'Decisión registrada durante una prueba controlada.'},headers=h).status_code,200)
+        self.assertEqual(staff.patch(f'/api/requests/{rid}',json={'status':'En revisión','note':'Cambio normal no permitido.'},headers=h).status_code,409)
+        self.assertEqual(staff.post(f'/api/requests/{rid}/reopen',json={'reason':'Se corrige la decisión de prueba y se retoma la revisión.'},headers=h).status_code,200)
+        detail=staff.get(f'/api/requests/{rid}').json
+        rejected=next(e for e in detail['events'] if e['status']=='Rechazada')
+        self.assertEqual(staff.post(f'/api/events/{rejected["id"]}/rectify',json={'reason':'La anotación correspondía a una prueba y queda rectificada.'},headers=h).status_code,200)
+        detail=staff.get(f'/api/requests/{rid}').json
+        self.assertTrue(next(e for e in detail['events'] if e['id']==rejected['id'])['rectified_at'])
+        self.assertEqual(detail['request']['status'],'En revisión')
+        arrival=staff.post(f'/api/people/{uid}/arrivals',json={},headers=h);self.assertEqual(arrival.status_code,201)
+        self.assertEqual(staff.post(f'/api/people/{uid}/arrivals',json={},headers=h).status_code,409)
+        self.assertEqual(staff.patch(f'/api/appointments/{arrival.json["id"]}',json={'action':'start'},headers=h).status_code,200)
+        self.assertEqual(staff.patch(f'/api/appointments/{arrival.json["id"]}',json={'action':'finish'},headers=h).status_code,200)
+
+    def test_24_document_reuse_is_owned_versioned_and_pending(self):
+        staff,h=self.login('funcionario@demo.pdi.cl','Funcionario2026!');citizen,hc=self.login()
+        def case():return citizen.post('/api/requests',json={'type_id':'domicilio','description':'Nueva solicitud para probar referencias documentales.'},headers=hc).json['id']
+        rid=case();target=case();name=citizen.get(f'/api/requests/{rid}').json['requirements'][0]['name']
+        raw=base64.b64encode(portal.simple_pdf('DOCUMENTO',['Contenido ficticio para la prueba.'])).decode()
+        upload=staff.post(f'/api/requests/{rid}/documents',json={'name':'copia.pdf','content':raw,'requirement':name,'origin':'presencial','origin_note':'Copia presentada y revisada durante la atención presencial.'},headers=h)
+        self.assertEqual(upload.status_code,201);did=upload.json['id']
+        self.assertEqual(citizen.post(f'/api/requests/{target}/reuse-document',json={'document_id':did,'requirement':name},headers=hc).status_code,409)
+        self.assertEqual(staff.patch(f'/api/documents/{did}/review',json={'status':'Aceptado'},headers=h).status_code,200)
+        reuse=citizen.post(f'/api/requests/{target}/reuse-document',json={'document_id':did,'requirement':name},headers=hc)
+        self.assertEqual(reuse.status_code,201)
+        copied=next(d for d in citizen.get(f'/api/requests/{target}').json['documents'] if d['id']==reuse.json['id'])
+        self.assertEqual(copied['source_document_id'],did);self.assertEqual(copied['review_status'],'En revisión');self.assertIsNone(copied['reviewed_by'])
+        other,ho=self.login('persona4@demo.pdi.cl','Ciudadano2026!')
+        self.assertEqual(other.get('/api/people/1/documents').status_code,403)
+        self.assertEqual(staff.patch(f'/api/documents/{did}/validity',json={'valid_until':'2020-01-01','reason':'Fecha de vencimiento informada en el documento.'},headers=h).status_code,200)
+        newer=case()
+        self.assertEqual(citizen.post(f'/api/requests/{newer}/reuse-document',json={'document_id':did,'requirement':name},headers=hc).status_code,409)
