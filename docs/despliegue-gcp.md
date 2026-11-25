@@ -20,7 +20,9 @@ Utilizar un proyecto nuevo dedicado al laboratorio. Verificar el crédito en Fac
 
 ## Crear infraestructura y desplegar
 
-Desde la raíz del repositorio:
+Desde la carpeta descomprimida que contiene `app.py`. El paquete de entrega no contiene estado/planes de Terraform ni configuración Azure de la cuenta original. Si se usa un clon Git en lugar del ZIP, primero mover `infra/foundry-config.auto.tfvars.json` fuera de `infra/` para que no intente referenciar el secreto Azure del equipo en el proyecto nuevo. No copiar estados ni configuraciones del proyecto publicado.
+
+Primero se despliega GCP sin IA; después se genera la configuración Azure propia según `replicar-azure.md`. Desde la raíz del proyecto:
 
 ```sh
 python3 scripts/deploy.py --project TU-PROYECTO --billing-account TU-CUENTA-DE-FACTURACION
@@ -61,7 +63,7 @@ La primera ejecución en Cloud Run crea los registros ficticios y los PDF de pru
 
 Los avisos miden consumo antes de aplicar créditos, para que un saldo facturado de cero no oculte el uso del cupón. No constituyen un corte automático de gasto. La base tiene costo aunque nadie navegue y conserva costo de almacenamiento si se detiene. El límite de instancias reduce el escalamiento, pero no garantiza un monto máximo. Los detalles de facturación pueden aparecer con retraso.
 
-Referencias oficiales: [Cloud Run](https://cloud.google.com/run/pricing), [Cloud SQL](https://cloud.google.com/sql/pricing), [Cloud Storage](https://cloud.google.com/storage/pricing) y [presupuestos](https://docs.cloud.google.com/billing/docs/how-to/budgets). La referencia de CPU compartida db-f1-micro en Iowa es US$0,0105/h, aproximadamente US$7,67 por 730 horas; se suman disco, respaldos y otros consumos. Esto no es una garantía del importe final. Las instancias compartidas son apropiadas para esta prueba y no tienen el SLA de instancias dedicadas.
+Referencias oficiales: [Cloud Run](https://cloud.google.com/run/pricing), [Cloud SQL](https://cloud.google.com/sql/pricing), [Cloud Storage](https://cloud.google.com/storage/pricing) y [presupuestos](https://docs.cloud.google.com/billing/docs/how-to/budgets). Consultar precios vigentes en los enlaces oficiales; se suman cómputo, disco, respaldos y otros consumos. Las instancias compartidas son apropiadas para esta prueba y no tienen el SLA de instancias dedicadas.
 
 ## Conservación y cierre
 

@@ -14,8 +14,8 @@
 | Como equipo quiero proteger expedientes | Otro ciudadano no accede a detalle ni descarga ajenos | Prueba automatizada de aislamiento |
 | Como funcionario quiero atender presencialmente | Llegada, turno, inicio y salida coherentes | Prueba automatizada del tótem y agenda |
 | Como administrador quiero gestionar cuentas ficticias | Acceso reservado y no desactivar la propia cuenta | Prueba automatizada de administración |
-| Como equipo quiero recuperación ante error de IA | No inventar análisis; conservar archivo y revisión manual | Prueba con proveedor simulado; llamada Azure real pendiente |
-| Como equipo quiero comprobar calidad de IA | Archivo adecuado, incorrecto y ambiguo; medir errores | Pendiente de acceso Azure y evaluación descrita en criterios |
+| Como equipo quiero recuperación ante error de IA | No inventar análisis; conservar archivo y revisión manual | Prueba de fallo simulado y llamadas reales documentadas |
+| Como equipo quiero comprobar calidad de IA | Archivo adecuado, incorrecto y ambiguo; medir errores | Casos reales concretos verificados; evaluación amplia pendiente |
 
 Las pruebas se ejecutan con SQLite temporal o una base PostgreSQL temporal con prefijo `pdi_validation_`; no utilizan la base publicada para las mutaciones de prueba. La evidencia fechada se conserva en `verificacion-gcp.md`. Las verificaciones mediante respuestas simuladas de proveedor comprueban el código, no la precisión de un modelo real.
 
@@ -29,7 +29,7 @@ Para trabajo compartido, registrar incidencias con rol, folio, pasos y resultado
 | Pedir/cancelar documento adicional | Motivo obligatorio, sin duplicados activos, aviso y trazabilidad | Prueba 23 |
 | Reapertura y corrección | Selector normal bloqueado tras decisión final; reapertura con motivo; original rectificado conservado | Prueba 23 |
 | Llegada sin cita | Sin doble turno; iniciar/finalizar aunque no se asociara expediente | Prueba 23 |
-| Reutilizar versión | Mismo ciudadano y tipo, sin heredar aceptación, referencia de versión, bloqueo por vencimiento | `test_24_document_reuse_is_owned_versioned_and_pending` |
+| Nueva copia por expediente | Reutilización deshabilitada; nueva carga independiente sin heredar aceptación | `test_24_each_case_requires_its_own_upload` |
 | Flechas, colores y diálogo | Sin filtro global; orden de pendientes; cerrar con equis o clic fuera | Implementado; revisión visual manual pendiente |
 
 ## Ampliación: sesión presencial y edición directa
@@ -56,3 +56,7 @@ Para trabajo compartido, registrar incidencias con rol, folio, pasos y resultado
 | Chat en desarrollo abre y se mueve; bloque reservado confirmado; Ver menos al final; prefijo CITA fijo y teclado numérico | Revisión visual en copia local aislada |
 
 La confirmación manual de citas y la programación por funcionario de versiones anteriores fueron sustituidas por la reserva directa del ciudadano. Las pruebas se actualizaron para exigir el flujo vigente, sin volver a habilitar esas funciones antiguas.
+
+## Cierre de IA individual y avisos
+
+`test_document_ai.py` cubre titular/RUN, formato, vigencia, incertidumbre y ausencia clara de campos. `test_z_document_actions.py` comprueba análisis aislado del archivo, permisos y aviso real del portal sin duplicados ni envíos externos. `frontend_smoke.cjs` comprueba los scripts juntos, botón por documento, ausencia de panel duplicado y retiro de reutilización. Total al cierre: 40 pruebas Python.

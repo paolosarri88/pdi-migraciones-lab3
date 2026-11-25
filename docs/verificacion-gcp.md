@@ -1,3 +1,5 @@
+> Bitácora histórica. Las entradas anteriores a la conexión con Foundry describen etapas previas y pueden mencionar funciones sustituidas. Para el estado final, ver `LEEME_ENTREGA.md`, `estado-entrega.md` y `criterios-documentales-ia.md`.
+
 # Verificación del despliegue · 23 de noviembre de 2026
 
 URL: https://pdi-portal-vwjcdgy22a-uc.a.run.app

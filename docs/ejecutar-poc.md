@@ -28,9 +28,9 @@ Los accesos ficticios están en «Datos de acceso para probar el portal» y en e
 11. Para demostrar llegada y atención, usar una cita confirmada de hoy: abrir `/totem`, elegir Sí, ingresar los números del código y completar copia/captura. Iniciar/finalizar desde Fila presencial. Sin cita, usar el turno provisional y su vinculación por funcionario. No reutilizar a ciegas códigos de una demostración anterior.
 12. Entrar como administrador para consultar persistencia y cuentas. Verificar que otro ciudadano no puede abrir un expediente ajeno.
 
-## IA: demostración pendiente de conexión real
+## IA: demostración conectada en la URL publicada
 
-Con el recurso Azure configurado, subir un ejemplo adecuado y un archivo claramente ajeno. Mostrar resultado por documento, explicación e historial; luego mostrar que el funcionario puede corregirlo. Ni el archivo ni el expediente se aprueban o rechazan por la IA: la recomendación requiere decisión del funcionario. Registrar evidencia según `docs/criterios-documentales-ia.md`.
+La URL publicada tiene Azure configurado. En una copia local o réplica nueva primero seguir `replicar-azure.md`. Subir un ejemplo adecuado y un archivo claramente ajeno. Mostrar resultado por documento, explicación e historial; luego mostrar que el funcionario puede corregirlo. Ni el archivo ni el expediente se aprueban o rechazan por la IA: la recomendación requiere decisión del funcionario. Registrar evidencia según `docs/criterios-documentales-ia.md`.
 
 Sin configuración, la aplicación permite la revisión manual. Un botón deshabilitado o el adaptador implementado no demuestran por sí solos el requisito de IA real.
 
@@ -44,8 +44,8 @@ Al reportar un problema, guardar: cuenta/rol ficticio, folio, sección, pasos, r
 2. Para evitar modificar expedientes ya usados en otra prueba, registra una persona nueva con correo ficticio, clave inicial y RUN asignado. Desde su ficha crea una solicitud presencial.
 3. Incorpora una copia indicando «Presentado presencialmente» y registra después tu decisión documental. Pide otro tipo con «Solicitar otro documento» y comprueba el aviso entrando como ese ciudadano. Cancela el requisito adicional con motivo para probar la corrección.
 4. Registra su llegada sin cita en la ficha y abre «Atención presencial». Inicia y finaliza su atención. La bandeja online no debe mostrar la solicitud presencial.
-5. En un expediente destinado a pruebas, registra rechazo y luego utiliza «Reabrir expediente». La historia debe explicar la reapertura; el selector normal no debe permitir saltarse ese paso. Rectifica una anotación de prueba y verifica que quede conservada en el apartado de rectificaciones.
-6. Con un documento aceptado en una solicitud, crea otra del mismo ciudadano y tipo compatible. «Usar documento existente» debe incorporar una referencia pendiente de nueva revisión. Un documento con vencimiento pasado no debe ofrecerse ni aceptarse para reutilización.
+5. En un expediente destinado a pruebas, registra rechazo y luego utiliza «Reabrir expediente». La historia debe explicar la reapertura; el selector normal no debe permitir saltarse ese paso. Utiliza los iconos de edición o deshacer; se conservan trazas internas de la operación.
+6. Cada nueva solicitud exige adjuntar otra copia. La biblioteca permite consultar documentos anteriores, pero «Usar documento existente» y la API de reutilización están deshabilitados.
 7. Abre «Calendario y recordatorios»: prueba cerrar con la equis, Escape y haciendo clic fuera del recuadro. En documentos solo deben quedar las flechas individuales, sin filtro «Mostrar» ni botones globales.
 
 ## Recorrido de recepción con cámara
@@ -68,6 +68,12 @@ Para la presentación, comprobar la cámara en el navegador y computador definit
 - En la ficha, los folios bajo cada archivo llevan a su expediente. «Ver más» cambia a «Ver menos» al final de todos los documentos.
 - En un expediente de prueba, acepta un documento y usa la papelera de esa última acción con motivo. El documento debe volver a revisión, no solo desaparecer la anotación. Prueba también deshacer un rechazo. Se deshace desde lo más reciente; no se deben eliminar acciones posteriores para saltarse sus dependencias.
 - Si la solicitud está Resuelta, el ciudadano puede descargar el certificado de demostración. Si se deshace esa resolución, la descarga debe bloquearse nuevamente.
-- El chat flotante solo aparece al ciudadano, se puede arrastrar y muestra En desarrollo. La propuesta IA del documento también está preparada, con la misma indicación mientras no esté conectada. Ver `integrar-ia.md`.
+- El chat flotante solo aparece al ciudadano, se puede arrastrar y muestra En desarrollo. La IA documental sí está conectada en la URL publicada: abre el documento y pulsa «Generar sugerencia con IA». Ver `criterios-documentales-ia.md`.
 
 La restauración completa corresponde a acciones con instantánea antes/después. Un registro antiguo incompleto puede requerir corrección explícita porque el sistema no inventa su estado anterior.
+
+## Casos concretos de IA y aviso
+
+Como funcionario se pueden abrir SOL-2026-0040 (CV), 0041 (otro titular), 0042 (identidad coincidente), 0043 (CV del mismo titular) y 0044 (identidad completa vencida). Son evidencias de prueba que pueden cambiar si otra persona trabaja sobre ellas. La IA sugiere rechazar, aceptar o revisar, sin modificar la decisión humana. Para una prueba independiente, crear un nuevo expediente de domicilio, que admite solicitudes paralelas.
+
+En un requisito sin archivo, pulsar «Notificar al ciudadano». Entrar en otra sesión con el ciudadano y abrir Avisos: debe aparecer el documento pedido con el enlace a su solicitud. Correo y WhatsApp no se envían. Un aviso idéntico pendiente no se duplica; deja de mostrarse como pendiente al subir el archivo o cerrar el expediente.
